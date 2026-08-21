@@ -85,56 +85,43 @@ UnderwriteAI fully satisfies and implements every architectural requirement for 
 ## 🏗️ Multi-Agent System Architecture & MCP Flow
 
 ```mermaid
-flowchart TD
-    subgraph Client["🖥️ Enterprise Client & Gateway Layer"]
-        UI["🖥️ Streamlit Enterprise UI<br/><i>(White Theme · Guidewire / Salesforce Look)</i>"]
-        API["⚡ FastAPI REST API Gateway<br/><i>(Google Cloud Run · Async Endpoints)</i>"]
-        RBAC["🔑 Cross-Department RBAC Layer<br/><i>(Underwriting · Claims · Actuarial · Broker)</i>"]
+flowchart LR
+    %% Input Layer
+    SUBMISSION["📄 <b>Broker Submission</b><br/>ACORD PDF / Raw Text"]
+
+    %% Core Multi-Agent Pipeline
+    subgraph PIPELINE["🤖 Autonomous Multi-Agent Pipeline"]
+        direction LR
+        INTAKE["📥 <b>1. Intake Agent</b><br/>Parsing & Normalization"]
+        RISK["🔍 <b>2. Risk Agent</b><br/>6-Axis Profiling"]
+        PRICING["💰 <b>3. Pricing Agent</b><br/>Actuarial Rating & Cap"]
+        COMPLIANCE["⚖️ <b>4. Compliance Agent</b><br/>10 Statutory Rules"]
+        ORCH["🎯 <b>5. Orchestrator</b><br/>Decision Routing"]
+        FEEDBACK["📊 <b>6. Feedback Agent</b><br/>Portfolio Analytics"]
+
+        INTAKE --> RISK --> PRICING --> COMPLIANCE --> ORCH --> FEEDBACK
     end
 
-    subgraph Security["🛡️ Enterprise Governance & Model Armor"]
-        ZDR["🔒 Zero-Data-Retention (ZDR)<br/><i>(In-Memory Processing Only)</i>"]
-        REG_LOCK["🌐 Sovereign Region Lock<br/><i>(Google Cloud us-central1 - Iowa)</i>"]
-        PII["✂️ Field-Level PII Redaction<br/><i>(SSN · Credit Card · Bank Info)</i>"]
-        INJ["⛔ Prompt Injection Defense<br/><i>(Jailbreak & System Override Interception)</i>"]
-        CAP["💰 Actuarial Bounds<br/><i>(Hard Policy Cap: $10,000 Max)</i>"]
+    %% External MCP Sub-Agent Fleet
+    subgraph MCP["🌍 Location Intelligence MCP Sub-Agents"]
+        MCP_GEO["📍 <b>Open-Meteo Geocoding</b><br/>Lat / Lon / Elevation"]
+        MCP_FEMA["🌊 <b>FEMA Flood Zone</b><br/>NFHL GIS & SFHA Status"]
+        MCP_USGS["🌋 <b>USGS Seismic</b><br/>Fault Distance & PGA %g"]
+        MCP_WX["🌪️ <b>Open-Meteo Weather</b><br/>Hurricane & Wind Tiers"]
     end
 
-    subgraph MCP_Layer["🌍 Location Intelligence MCP Sub-Agents"]
-        MCP_GEO["📍 Open-Meteo Geocoding MCP<br/><i>(Address Normalization & Lat/Lon/Elev)</i>"]
-        MCP_FEMA["🌊 FEMA Flood Zone MCP<br/><i>(NFHL GIS · Zone VE/AE · SFHA Status)</i>"]
-        MCP_USGS["🌋 USGS Seismic MCP<br/><i>(Fault Proximity · PGA %g · M3.5+ Events)</i>"]
-        MCP_WEATHER["🌪️ Open-Meteo Weather MCP<br/><i>(Hurricane Tiers 1-5 · Max Wind Gusts)</i>"]
+    %% Output Decision Layer
+    subgraph DECISION["🎯 Tripartite Verdict"]
+        APP["✅ <b>Auto-Approved</b><br/>Instant Straight-Through"]
+        REV["👨‍💼 <b>Manual Review</b><br/>Senior Underwriter Desk"]
+        DEC["🚫 <b>Auto-Declined</b><br/>Policy / Class Exclusion"]
     end
 
-    subgraph Fleet["🤖 Specialized Multi-Agent Fleet"]
-        A1["📥 1. Intake Agent<br/><i>(Document Extraction + ACORD 125/126 Parsing)</i>"]
-        A2["🔍 2. Risk Profiling Agent<br/><i>(6 Dimensions + Dynamic MCP Environmental Feeds)</i>"]
-        A3["💰 3. Pricing & Product Agent<br/><i>(Base Rate × 8 Rating Factors · $10K Cap)</i>"]
-        A4["⚖️ 4. Compliance Agent<br/><i>(10 Statutory Regulatory & Fair Lending Rules)</i>"]
-        A5["🎯 5. Orchestrator Agent<br/><i>(Tripartite Decision Matrix & HITL Triage)</i>"]
-        A6["📊 6. Feedback & Learning Agent<br/><i>(Executive Portfolio Intelligence & Alerts)</i>"]
-    end
-
-    subgraph StateStore["🏛️ Enterprise State Store & Observability"]
-        REG["📋 Agent Registry<br/><i>(Catalog Discovery & Health Checks)</i>"]
-        MEM["🧠 Memory Bank<br/><i>(90-Day Multi-Week Snapshots)</i>"]
-        OTEL["🔭 OpenTelemetry Telemetry<br/><i>(Distributed Spans & Latency Logs)</i>"]
-        NOTIF["🔔 Notification Center<br/><i>(Senior Underwriter Alert Queue)</i>"]
-    end
-
-    UI --> API --> RBAC --> Security
-    Security --> A5
-    A5 --> A1
-    A1 <-->|Geocoding Query| MCP_GEO
-    A1 --> A2
-    A2 <-->|Flood / Seismic / Wind Feeds| MCP_FEMA & MCP_USGS & MCP_WEATHER
-    A2 --> A3 --> A4 --> A5 --> A6
-    
-    A1 & A2 & A3 & A4 & A5 & A6 -.-> REG
-    A1 & A2 & A3 & A4 & A5 & A6 -.-> MEM
-    A1 & A2 & A3 & A4 & A5 & A6 -.-> OTEL
-    A5 --> NOTIF
+    %% Data Flow Connections
+    SUBMISSION --> INTAKE
+    INTAKE <-->|Address Query| MCP_GEO
+    RISK <-->|Live Hazard Feeds| MCP_FEMA & MCP_USGS & MCP_WX
+    ORCH --> APP & REV & DEC
 ```
 
 ---
