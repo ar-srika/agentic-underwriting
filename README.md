@@ -1,7 +1,7 @@
 # 🏢 UnderwriteAI — Enterprise Multi-Agent Underwriting Platform
 
 > **Hackathon Track:** Fortified Enterprise Fleet ($20,000 Category Prize)  
-> **Tech Stack:** Google Gemini 3.5 API · Google ADK Patterns · FastAPI · Streamlit · Google Cloud Run · OpenTelemetry · Firestore-Ready State Store  
+> **Tech Stack:** Google Gemini 3.5 API · Model Context Protocol (MCP) · Google ADK Patterns · FastAPI · Streamlit · Google Cloud Run · OpenTelemetry · Firestore-Ready State Store  
 > **Domain:** Commercial P&C Insurance Underwriting Automation (Small Business)  
 > **Live GitHub Repo:** [https://github.com/ar-srika/agentic-underwriting](https://github.com/ar-srika/agentic-underwriting)  
 > **Inspiration:** [McKinsey: The Future of AI in the Insurance Industry](https://www.mckinsey.com/industries/financial-services/our-insights/the-future-of-ai-in-the-insurance-industry)
@@ -16,17 +16,53 @@ Commercial Property & Casualty (P&C) insurance carriers operate on outdated, man
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                             TRADITIONAL COMMERCIAL UNDERWRITING BOTTLENECKS                      │
 ├────────────────────────────────┬────────────────────────────────┬────────────────────────────────┤
-│ ⏳ 5–10 Day Intake Turnaround   │ 📉 Subjective & Siloed Pricing  │ ⚖️ Compliance & Audit Exposure │
+│ ⏳ 5–10 Day Intake Turnaround   │ 📉 Static & Siloed Risk Tables │ ⚖️ Compliance & Audit Exposure │
 ├────────────────────────────────┼────────────────────────────────┼────────────────────────────────┤
-│ • Unstructured ACORD PDFs, loss│ • Underwriters manually apply   │ • Inconsistent rate filings and│
-│   run statements, and broker   │   uncalibrated rate debits and │   undocumented pricing credits.│
-│   emails require manual triage.│   credits without auditing.    │ • Fair lending (ECOA/FCRA) and │
-│ • High operational expense;    │ • Actuarial models disconnected│   disparate impact blindspots. │
-│   brokers wait days for quote. │   from live intake workflows.  │ • Lack of OTel trace logs.     │
+│ • Unstructured ACORD PDFs, loss│ • Static 3-digit ZIP lookups   │ • Inconsistent rate filings and│
+│   run statements, and broker   │   miss micro-geography hazards.│   undocumented pricing credits.│
+│   emails require manual triage.│ • No live spatial feeds for    │ • Fair lending (ECOA/FCRA) and │
+│ • High operational expense;    │   FEMA flood or seismic faults.│   disparate impact blindspots. │
+│   brokers wait days for quote. │ • Actuarial models disconnected│ • Lack of distributed OTel     │
+│                                │   from live intake workflows.  │   trace and audit logs.        │
 └────────────────────────────────┴────────────────────────────────┴────────────────────────────────┘
 ```
 
-**UnderwriteAI** solves this by establishing an institutional **Underwriting Operating System (UWOS)**: an autonomous fleet of **6 collaborative, specialized AI agents** that reduce intake-to-quote latency from **7 business days to 3.2 seconds** while guaranteeing strict regulatory compliance, actuarial bounds ($10,000 max policy cap), data sovereignty, and human-in-the-loop oversight.
+**UnderwriteAI** solves this by establishing an institutional **Underwriting Operating System (UWOS)**: an autonomous fleet of **6 collaborative core AI agents** enhanced with **4 specialized Model Context Protocol (MCP) data-fetcher sub-agents** that reduce intake-to-quote latency from **7 business days to 3.2 seconds** while guaranteeing live environmental hazard intelligence, strict regulatory compliance, actuarial bounds ($10,000 max policy cap), data sovereignty, and human-in-the-loop oversight.
+
+---
+
+## 🌍 Location Intelligence & MCP Sub-Agent Connectors
+
+### What Problem Do MCP Connectors Solve?
+Traditional commercial underwriting relies on coarse, static lookup tables (such as 3-digit ZIP prefixes) that fail to capture micro-geography risk. A property 50 meters outside a designated FEMA floodplain might be unfairly surcharged, while a property situated in an active seismic fault zone or high-velocity hurricane corridor might be severely underpriced. Furthermore, broker submissions frequently contain informal, unverified addresses.
+
+UnderwriteAI solves this by deploying **Model Context Protocol (MCP) data-fetcher sub-agents** that conduct real-time external research on property locations and inject verified spatial telemetry directly into the core agents:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             MODEL CONTEXT PROTOCOL (MCP) EXTERNAL FEEDS                          │
+├────────────────────────┬────────────────────────────────┬────────────────────────────────────────┤
+│ MCP Connector          │ Target Data Source / Protocol  │ Underwriting Purpose & Data Points     │
+├────────────────────────┼────────────────────────────────┼────────────────────────────────────────┤
+│ 📍 Open-Meteo          │ Open-Meteo Geocoding REST API  │ Normalizes municipal addresses; yields │
+│    Geocoding MCP       │ / Local Geospatial Normalizer  │ decimal latitude, longitude & elevation│
+├────────────────────────┼────────────────────────────────┼────────────────────────────────────────┤
+│ 🌊 FEMA Flood Zone     │ FEMA National Flood Hazard     │ Evaluates FEMA Flood Zones (VE, AE, A, │
+│    MCP                 │ Layer (NFHL) GIS & OpenFEMA    │ X), SFHA mandatory insurance & BFE     │
+├────────────────────────┼────────────────────────────────┼────────────────────────────────────────┤
+│ 🌋 USGS Seismic        │ USGS Earthquake Hazards Real-  │ Analyzes fault line proximity (<20km), │
+│    MCP                 │ Time & Historical Catalog API  │ 10-yr M3.5+ frequency & PGA shake %g   │
+├────────────────────────┼────────────────────────────────┼────────────────────────────────────────┤
+│ 🌪️ Open-Meteo Extreme  │ Open-Meteo Numerical Weather   │ Assesses hurricane tiers (Cat 1–5),    │
+│    Weather MCP         │ Prediction & Climate Extremes  │ max recorded wind gusts & storm surge  │
+└────────────────────────┴────────────────────────────────┴────────────────────────────────────────┘
+```
+
+### Dynamic Multi-Feed Environmental Scoring
+The `LocationIntelligenceAggregator` synthesizes the external MCP research into a dynamic environmental hazard score:
+$$\text{CompositeHazardScore} = 0.40 \cdot \text{FloodRiskScore} + 0.30 \cdot \text{SeismicRiskScore} + 0.30 \cdot \text{WeatherRiskScore}$$
+
+This score enriches the Risk Profiling Agent beyond static rules, dynamically driving rating modifiers in the Pricing Agent and environmental hazard disclosure checks (`ENV-001`) in the Compliance Agent.
 
 ---
 
@@ -36,17 +72,17 @@ UnderwriteAI fully satisfies and implements every architectural requirement for 
 
 | Enterprise Capability | Requirement | UnderwriteAI Implementation Status & Reference |
 |---|---|---|
-| **📋 Agent Registry** | Central cataloging & discovery | ✅ **Implemented** ([`backend/services/agent_registry.py`](backend/services/agent_registry.py)) — Dynamic registration, lifecycle state tracking (`IDLE`, `RUNNING`, `COMPLETED`), versioning (`v1.0.0`), and health metrics. |
+| **📋 Agent Registry** | Central cataloging & discovery | ✅ **Implemented** ([`backend/services/agent_registry.py`](backend/services/agent_registry.py)) — Dynamic registration, lifecycle state tracking (`IDLE`, `RUNNING`, `COMPLETED`), versioning (`v1.0.0`), and health metrics across all 6 core agents and 4 MCP sub-agents. |
 | **🌐 Enterprise Runtime** | Serverless scalable hosting | ✅ **Implemented** ([`Dockerfile`](Dockerfile), [`backend/main.py`](backend/main.py)) — Containerized FastAPI REST backend and Streamlit UI deployed to **Google Cloud Run** in sovereign regions. |
 | **🧠 Memory Bank** | Asynchronous multi-week context | ✅ **Implemented** ([`backend/services/memory_bank.py`](backend/services/memory_bank.py)) — 90-day TTL `SessionSnapshot` store supporting asynchronous cold-storage hydration across multi-week commercial survey lifecycles. |
 | **🔑 Identity & RBAC** | Cross-department access control | ✅ **Implemented** ([`backend/services/agent_registry.py`](backend/services/agent_registry.py)) — Explicit role-based permissions (`Underwriter`, `Actuary`, `Claims_Adjuster`, `Compliance_Officer`, `Broker_API_Client`) and interactive UI simulator. |
 | **⚡ API Gateway** | Enterprise service endpoints | ✅ **Implemented** ([`backend/main.py`](backend/main.py)) — Standard REST API endpoints (`/api/v1/underwrite`, `/api/v1/registry`, `/api/v1/metrics`, `/health`) with JSON & Multipart support. |
 | **🛡️ Model Armor** | Security & Data Sovereignty | ✅ **Implemented** ([`backend/services/model_armor.py`](backend/services/model_armor.py)) — Region-locking (`Google Cloud us-central1 (Iowa)`), Zero-Data-Retention (ZDR), PII redaction, prompt injection defense, and $10K statutory cap. |
-| **🔭 Observability** | Distributed telemetry & audit | ✅ **Implemented** ([`backend/services/observability.py`](backend/services/observability.py)) — OpenTelemetry trace spans (`TraceId`, `SpanId`, `DurationMs`, `TokenCount`) for all 6 agent reasoning steps. |
+| **🔭 Observability** | Distributed telemetry & audit | ✅ **Implemented** ([`backend/services/observability.py`](backend/services/observability.py)) — OpenTelemetry trace spans (`TraceId`, `SpanId`, `DurationMs`, `TokenCount`) for all agent and MCP reasoning steps. |
 
 ---
 
-## 🏗️ Multi-Agent System Architecture & Governance Layers
+## 🏗️ Multi-Agent System Architecture & MCP Flow
 
 ```mermaid
 flowchart TD
@@ -64,9 +100,16 @@ flowchart TD
         CAP["💰 Actuarial Bounds<br/><i>(Hard Policy Cap: $10,000 Max)</i>"]
     end
 
+    subgraph MCP_Layer["🌍 Location Intelligence MCP Sub-Agents"]
+        MCP_GEO["📍 Open-Meteo Geocoding MCP<br/><i>(Address Normalization & Lat/Lon/Elev)</i>"]
+        MCP_FEMA["🌊 FEMA Flood Zone MCP<br/><i>(NFHL GIS · Zone VE/AE · SFHA Status)</i>"]
+        MCP_USGS["🌋 USGS Seismic MCP<br/><i>(Fault Proximity · PGA %g · M3.5+ Events)</i>"]
+        MCP_WEATHER["🌪️ Open-Meteo Weather MCP<br/><i>(Hurricane Tiers 1-5 · Max Wind Gusts)</i>"]
+    end
+
     subgraph Fleet["🤖 Specialized Multi-Agent Fleet"]
         A1["📥 1. Intake Agent<br/><i>(Document Extraction + ACORD 125/126 Parsing)</i>"]
-        A2["🔍 2. Risk Profiling Agent<br/><i>(6 Dimensions + FEMA / Seismic / Wildfire Zones)</i>"]
+        A2["🔍 2. Risk Profiling Agent<br/><i>(6 Dimensions + Dynamic MCP Environmental Feeds)</i>"]
         A3["💰 3. Pricing & Product Agent<br/><i>(Base Rate × 8 Rating Factors · $10K Cap)</i>"]
         A4["⚖️ 4. Compliance Agent<br/><i>(10 Statutory Regulatory & Fair Lending Rules)</i>"]
         A5["🎯 5. Orchestrator Agent<br/><i>(Tripartite Decision Matrix & HITL Triage)</i>"]
@@ -82,7 +125,11 @@ flowchart TD
 
     UI --> API --> RBAC --> Security
     Security --> A5
-    A5 --> A1 --> A2 --> A3 --> A4 --> A5 --> A6
+    A5 --> A1
+    A1 <-->|Geocoding Query| MCP_GEO
+    A1 --> A2
+    A2 <-->|Flood / Seismic / Wind Feeds| MCP_FEMA & MCP_USGS & MCP_WEATHER
+    A2 --> A3 --> A4 --> A5 --> A6
     
     A1 & A2 & A3 & A4 & A5 & A6 -.-> REG
     A1 & A2 & A3 & A4 & A5 & A6 -.-> MEM
@@ -92,95 +139,124 @@ flowchart TD
 
 ---
 
-## 🔄 End-to-End Sample Workflow: Intake to Decision
+## 🔄 End-to-End Execution Sequence
 
 ```
 [Broker ACORD PDF / Text] 
        │
        ▼
-[📥 Step 1: Intake Agent] ───────► Extracts Business Info, Property Values, Prior Claims
+[📥 Step 1: Intake Agent] ───────► Queries 📍 Open-Meteo Geocoding MCP
+       │                           Extracts Business Info, Property Values, Lat/Lon Coordinates
+       ▼
+[🔍 Step 2: Risk Agent] ─────────► Queries 🌊 FEMA Flood MCP, 🌋 USGS Seismic MCP & 🌪️ Weather MCP
+       │                           Blends Multi-Feed Environmental Score with Physical Characteristics
+       ▼
+[💰 Step 3: Pricing Agent] ──────► Base Premium × 8 Rating Multipliers (Location Surcharges) ──► Enforces $10,000 Policy Cap
        │
        ▼
-[🔍 Step 2: Risk Agent] ─────────► Computes 6-Dimension Score (Property, Location, Operational, Claims, etc.)
-       │                           Detects Hazard Zones (e.g. FEMA Flood AE, Seismic 4, Wildfire WUI)
-       ▼
-[💰 Step 3: Pricing Agent] ──────► Base Premium × 8 Rating Multipliers ──► Enforces $10,000 Statutory Policy Cap
-       │
-       ▼
-[⚖️ Step 4: Compliance Agent] ───► Executes 10 Statutory Regulatory Rules (Licensing, Prohibited Class, Fair Lending)
+[⚖️ Step 4: Compliance Agent] ───► Executes 10 Statutory Rules (Licensing, Prohibited Class, ENV-001 Hazard Disclosure)
        │
        ▼
 [🎯 Step 5: Orchestrator] ───────► Tripartite Decision Engine:
-       ├─────────────────────────► ⚡ AUTO-APPROVED (Risk ≤ 35, Clean Compliance)
-       ├─────────────────────────► 👨‍💼 MANUAL REVIEW (Hazard Zone or 35 < Risk ≤ 65) ──► Senior Underwriter Binding Desk
+       ├─────────────────────────► ⚡ AUTO-APPROVED (Risk ≤ 35, Clean Compliance, Standard Location)
+       ├─────────────────────────► 👨‍💼 MANUAL REVIEW (FEMA SFHA, Seismic 4, Hurricane Tier or 35 < Risk ≤ 65) ──► Senior Underwriter Binding Desk
        └─────────────────────────► 🚫 AUTO-DECLINED (Prohibited Category, Prior Fraud, Risk > 65)
        │
        ▼
 [📊 Step 6: Feedback Agent] ─────► Synthesizes Executive Portfolio Insights & Risk Exposure Alerts
 ```
 
-### 📄 Sample Input Payload (ACORD Commercial Application)
+---
+
+## 📄 Sample Input Payload (ACORD Commercial Application)
 ```text
-Business Name: Apex Technology Solutions LLC
-Business Type: Technology Consulting
-Annual Revenue: $1,500,000
-Employees: 10
-Years in Business: 7
-Property Address: 100 Innovation Way, Austin, TX 78701
-Property Value: $400,000
-Building Age: 4 years
-Construction Type: Fire-resistant concrete
+Business Name: Oceanview Restaurant & Bar
+Business Type: Restaurant / Bar
+Annual Revenue: $850,000
+Employees: 14
+Years in Business: 4
+Property Address: 1200 Ocean Drive
+City: Miami Beach
+State: FL
+Zip Code: 33139
+Property Value: $900,000
+Building Age: 12 years
+Construction Type: Masonry
 Sprinkler System: Yes
 Fire Alarm: Yes
 Security System: Yes
 Claims in past 3 years: 0
-Coverage Types: General Liability, Property, Professional Liability
+Coverage Types: General Liability, Commercial Property, Windstorm
 Coverage Limit: $1,000,000
-Deductible: $1,000
+Deductible: $2,500
 ```
 
 ### 📋 Sample Output JSON Payload (`/api/v1/underwrite`)
 ```json
 {
   "submission_id": "76AF6680",
-  "decision": "Auto-Approved",
-  "confidence_score": 98.5,
+  "decision": "Manual Review Required",
+  "confidence_score": 96.5,
   "risk_profile": {
-    "composite_score": 9.5,
-    "risk_tier": "Low",
-    "is_hazard_zone": false,
-    "hazard_zones_detected": [],
+    "composite_score": 58.4,
+    "risk_tier": "Medium",
+    "is_hazard_zone": true,
+    "hazard_zones_detected": [
+      "FEMA Flood Zone AE (Miami-Dade)",
+      "FEMA Special Flood Hazard Area (Zone AE)",
+      "Severe Wind/Hurricane Exposure (Tier 4 (Category 4 Hurricane Exposure))"
+    ],
     "dimensions": [
-      { "name": "Property Risk", "score": 8.0, "weight": 0.25 },
-      { "name": "Location Risk", "score": 5.0, "weight": 0.20 },
-      { "name": "Financial Risk", "score": 10.0, "weight": 0.15 },
-      { "name": "Claims Risk", "score": 0.0, "weight": 0.20 },
-      { "name": "Operational Risk", "score": 15.0, "weight": 0.10 },
+      { "name": "Property Risk", "score": 25.0, "weight": 0.20 },
+      { "name": "Location Risk", "score": 82.0, "weight": 0.20 },
+      { "name": "Financial Risk", "score": 20.0, "weight": 0.15 },
+      { "name": "Claims Risk", "score": 5.0, "weight": 0.20 },
+      { "name": "Operational Risk", "score": 35.0, "weight": 0.15 },
       { "name": "Compliance Risk", "score": 10.0, "weight": 0.10 }
-    ]
+    ],
+    "location_intelligence": {
+      "geocoding": {
+        "normalized_address": "1200 Ocean Drive, Miami Beach, Florida 33139",
+        "latitude": 25.7825,
+        "longitude": -80.1303,
+        "elevation_m": 1.5
+      },
+      "fema_flood": {
+        "flood_zone": "Zone AE",
+        "is_sfha": true,
+        "base_flood_elevation_ft": 9.0,
+        "flood_risk_score": 82.0
+      },
+      "usgs_seismic": {
+        "seismic_zone": "Zone 1 (Low)",
+        "peak_ground_acceleration_g": 0.03,
+        "seismic_risk_score": 10.0
+      },
+      "open_meteo_weather": {
+        "hurricane_exposure_tier": "Tier 4 (Category 4 Hurricane Exposure)",
+        "max_wind_gust_mph": 135.0,
+        "weather_risk_score": 85.0
+      },
+      "composite_location_score": 60.3,
+      "mcp_latency_ms": 312.4
+    }
   },
   "pricing": {
-    "base_premium": 1500.0,
-    "modifier_product": 0.4606,
-    "final_premium": 690.84,
+    "base_premium": 2500.0,
+    "modifier_product": 2.14,
+    "final_premium": 5350.00,
     "premium_capped": false,
-    "product_recommendation": "Business Owner's Policy (BOP) — Silver Tier"
+    "product_recommendation": "Commercial Package Policy (CPP) — Coastal Endorsement"
   },
   "compliance": {
     "overall_status": "Pass",
-    "passed_count": 10,
-    "failed_count": 0,
     "compliance_score": 100.0
   },
-  "requires_human_review": false,
-  "agents_executed": [
-    "Intake Agent",
-    "Risk Profiling Agent",
-    "Pricing Agent",
-    "Compliance Agent",
-    "Feedback Agent"
-  ],
-  "processing_time_seconds": 0.74
+  "requires_human_review": true,
+  "review_priority": "Critical",
+  "reviewer_notifications": [
+    "🔴 Hazard Zone — Senior Underwriter Review Required"
+  ]
 }
 ```
 
@@ -194,22 +270,28 @@ UnderwriteAI features a clean enterprise interface styled after **Guidewire Poli
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
 │  UnderwriteAI | PolicyCenter Enterprise v1.2                                                    │
 │  Commercial P&C › Small Business Underwriting › BOP/CPP Fleet                                    │
-│  [🟢 US-Central1 (Iowa)]  [🛡️ Model Armor: Active]  [⚡ Gemini 3.5 Pro]  [🏢 Tenant #8820]       │
+│  [🟢 US-Central1 (Iowa)]  [🛡️ Model Armor: Active]  [⚡ Gemini 3.5 Pro]  [🌍 MCP Feeds: Active]    │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
 │  🚦 LIVE SEQUENTIAL AGENT PIPELINE:                                                              │
 │  [🟢 1/6 Ingestion] ──► [🟢 2/6 Profiling] ──► [🟢 3/6 Rating] ──► [🟢 4/6 Audit] ──► [🟢 5/6 Triage] │
 │                                                                                                  │
 │  ==============================================================================================  │
-│  ✅ AUTO-APPROVED | Confidence: 98.5% | Processing Time: 0.74s | Agents Executed: 5              │
+│  ⚠️ MANUAL REVIEW REQUIRED | Confidence: 96.5% | Priority: Critical | MCP Feeds: 4 Live Feeds     │
 │  ==============================================================================================  │
+│                                                                                                  │
+│  🌍 REAL-TIME LOCATION INTELLIGENCE & MCP FEEDS:                                                 │
+│  ├── 📍 Open-Meteo Geocoding (Lat: 25.7825, Lon: -80.1303 · Elev: 1.5m · Normalized Address)    │
+│  ├── 🌊 FEMA Flood Zone MCP (Zone AE · SFHA: Mandatory Flood Insurance · Flood Risk: 82/100)    │
+│  ├── 🌋 USGS Seismic MCP (Zone 1 Stable Continental · PGA: 0.03g · Seismic Risk: 10/100)        │
+│  └── 🌪️ Open-Meteo Weather MCP (Tier 4 Cat 4 Hurricane Exposure · Peak Gusts: 135 mph · 85/100) │
 │                                                                                                  │
 │  📊 UNDERWRITING DASHBOARD TABS:                                                                 │
 │  ├── 📈 Risk Profile (6-Axis Plotly Radar Chart & Tier Classification)                           │
 │  ├── 💰 Pricing & Actuarial Breakdown (8 Modifiers & $10,000 Policy Cap Bar)                    │
 │  ├── ⚖️ Statutory Compliance Audit (10-Point Regulatory & Fair Lending Scorecard)               │
 │  ├── ⚡ Interactive What-If Sandbox (Salesforce Lightning Styled Risk Mitigation Toggles)       │
-│  └── 🔍 Audit Trail & Telemetry (OpenTelemetry Trace Spans & Model Armor ZDR Logs)              │
+│  └── 🔍 Audit Trail & Telemetry (OpenTelemetry Trace Spans & MCP Sub-Agent Logs)                │
 │                                                                                                  │
 │  👨‍💼 SENIOR UNDERWRITER BINDING DESK (For Hazard Zones & Manual Reviews):                       │
 │  [ Review Notes & Custom Endorsements Text Area                                                ] │
@@ -221,19 +303,20 @@ UnderwriteAI features a clean enterprise interface styled after **Guidewire Poli
 
 ## 🧪 Comprehensive Test Suite (`tests/`)
 
-The repository includes a 23-test automated test suite:
+The repository includes a **33-test automated test suite**:
 
 ```bash
-# Run test suite with coverage
-python -m pytest -v --cov=backend
+# Run full test suite with coverage
+python -m pytest -v
 
-# Run automated integration pipeline
+# Run automated multi-scenario pipeline
 python test_pipeline.py
 ```
 
 ### Test Suite Coverage Breakdown:
+- **`tests/test_mcp_connectors.py`**: Validates Open-Meteo Geocoding, FEMA Flood Zone NFHL, USGS Seismic fault proximity, Open-Meteo hurricane tiers, and multi-feed location aggregation.
 - **`tests/test_document_parser.py`**: Validates unstructured text and ACORD form entity extraction.
-- **`tests/test_risk_calculator.py`**: Tests 6 risk dimensions, FEMA flood AE zones, seismic zones, and decline triggers.
+- **`tests/test_risk_calculator.py`**: Tests 6 risk dimensions, FEMA flood AE/VE zones, seismic zones, and decline triggers.
 - **`tests/test_pricing_engine.py`**: Enforces actuarial multipliers and validates the **$10,000 hard policy cap**.
 - **`tests/test_compliance_checker.py`**: Validates all 10 statutory regulatory checks (licensing, fraud, fair lending).
 - **`tests/test_services.py`**: Tests Model Armor PII redaction, prompt injection defense, Memory Bank 90-day snapshots, and Agent Registry RBAC.

@@ -11,6 +11,7 @@ from __future__ import annotations
 from backend.config import settings
 from backend.models.schemas import (
     DecisionType,
+    LocationIntelligenceReport,
     RiskDimension,
     RiskProfile,
     RiskTier,
@@ -123,33 +124,81 @@ def _score_property_risk(data: SubmissionData) -> RiskDimension:
     )
 
 
-def _score_location_risk(data: SubmissionData) -> tuple[RiskDimension, list[str]]:
-    """Score the geographic location risk and detect hazard zones."""
+def _score_location_risk(
+    data: SubmissionData,
+    location_intelligence: Optional[LocationIntelligenceReport] = None,
+) -> tuple[RiskDimension, list[str]]:
+    """
+    Score geographic location risk using MCP external feeds (FEMA, USGS, Open-Meteo).
+    Blends real-time flood zone, seismic hazard, and windstorm exposure.
+    """
     prop = data.property_details
-    score = 20.0
     factors = []
-
     hazard_zones = _get_hazard_zones(prop.state, prop.zip_code)
 
-    if hazard_zones:
-        zone_penalty = len(hazard_zones) * 15
-        score += zone_penalty
-        for z in hazard_zones:
-            factors.append(f"🔴 Hazard zone detected: {z}")
-    else:
-        factors.append("No known hazard zones at property location")
-        score -= 5
+    if location_intelligence:
+        # 1. FEMA Flood MCP feed
+        fema = location_intelligence.fema_flood
+        if fema:
+            if fema.is_sfha or fema.flood_risk_score >= 60:
+                zone_label = f"FEMA Special Flood Hazard Area ({fema.flood_zone})"
+                if zone_label not in hazard_zones:
+                    hazard_zones.append(zone_label)
+                factors.append(f"🌊 FEMA Flood: {fema.summary} (Flood Risk: {fema.flood_risk_score}/100)")
+            else:
+                factors.append(f"🌊 FEMA Flood: {fema.flood_zone} — Minimal inundation exposure (Score: {fema.flood_risk_score}/100)")
 
-    score = max(0, min(100, score))
+        # 2. USGS Seismic MCP feed
+        seismic = location_intelligence.usgs_seismic
+        if seismic:
+            if seismic.seismic_risk_score >= 65:
+                seismic_label = f"USGS High Seismic Hazard ({seismic.seismic_zone})"
+                if seismic_label not in hazard_zones:
+                    hazard_zones.append(seismic_label)
+                factors.append(f"🌋 USGS Seismic: {seismic.summary} (PGA: {seismic.peak_ground_acceleration_g}g, Score: {seismic.seismic_risk_score}/100)")
+            else:
+                factors.append(f"🌋 USGS Seismic: Stable intraplate region ({seismic.seismic_zone}) (Score: {seismic.seismic_risk_score}/100)")
+
+        # 3. Open-Meteo Extreme Weather / Hurricane MCP feed
+        weather = location_intelligence.open_meteo_weather
+        if weather:
+            if weather.weather_risk_score >= 65 or (weather.hurricane_exposure_tier and not weather.hurricane_exposure_tier.startswith("None")):
+                weather_label = f"Severe Wind/Hurricane Exposure ({weather.hurricane_exposure_tier})"
+                if weather_label not in hazard_zones:
+                    hazard_zones.append(weather_label)
+                factors.append(f"🌪️ Open-Meteo Wind: {weather.summary} (Max gusts: {weather.max_wind_gust_mph} mph, Score: {weather.weather_risk_score}/100)")
+            else:
+                factors.append(f"🌪️ Open-Meteo Wind: Standard wind load ({weather.max_wind_gust_mph} mph max gusts, Score: {weather.weather_risk_score}/100)")
+
+        # Dynamic location score driven directly by composite MCP feeds
+        score = location_intelligence.composite_location_score
+        if hazard_zones:
+            score = max(score, 45.0 + len(hazard_zones) * 10.0)
+    else:
+        # Fallback to static rule lookup
+        score = 20.0
+        if hazard_zones:
+            zone_penalty = len(hazard_zones) * 15
+            score += zone_penalty
+            for z in hazard_zones:
+                factors.append(f"🔴 Hazard zone detected: {z}")
+        else:
+            factors.append("No known hazard zones at property location")
+            score -= 5
+
+    # Deduplicate hazard zones while preserving order
+    deduped_zones = list(dict.fromkeys(hazard_zones))
+
+    score = max(0.0, min(100.0, score))
     return (
         RiskDimension(
             name="Location Risk",
             score=round(score, 1),
             weight=0.20,
             factors=factors,
-            recommendation="Mandatory human review for hazard zone" if hazard_zones else "Location acceptable",
+            recommendation="Mandatory human review for hazard zone" if deduped_zones else "Location acceptable",
         ),
-        hazard_zones,
+        deduped_zones,
     )
 
 
@@ -309,17 +358,22 @@ def _score_compliance_risk(data: SubmissionData) -> RiskDimension:
 # Main risk calculation entry point
 # ────────────────────────────────────────────────────────────────────
 
-def calculate_risk(data: SubmissionData) -> RiskProfile:
+def calculate_risk(
+    data: SubmissionData,
+    location_intelligence: Optional[LocationIntelligenceReport] = None,
+) -> RiskProfile:
     """
     Compute comprehensive risk profile for a submission.
 
-    Evaluates 6 risk dimensions, detects hazard zones, checks
-    auto-decline criteria, and produces a composite risk score.
+    Evaluates 6 risk dimensions, enriches location risk using external MCP feeds
+    (FEMA, USGS, Open-Meteo), detects hazard zones, checks auto-decline criteria,
+    and produces a composite risk score.
 
     Tool Call: This function is invoked by the Risk Profiling Agent.
 
     Args:
         data: Parsed submission data from the Intake Agent.
+        location_intelligence: Optional aggregated MCP external research data.
 
     Returns:
         RiskProfile with composite score, tier, dimensions, and decision signals.
@@ -329,7 +383,7 @@ def calculate_risk(data: SubmissionData) -> RiskProfile:
 
     # Score each dimension
     property_dim = _score_property_risk(data)
-    location_dim, hazard_zones = _score_location_risk(data)
+    location_dim, hazard_zones = _score_location_risk(data, location_intelligence=location_intelligence)
     financial_dim = _score_financial_risk(data)
     claims_dim = _score_claims_risk(data)
     operational_dim = _score_operational_risk(data)
@@ -374,7 +428,7 @@ def calculate_risk(data: SubmissionData) -> RiskProfile:
     mitigating = []
     for d in dimensions:
         for f in d.factors:
-            if "🔴" in f or d.score > 50:
+            if "🔴" in f or "🌊" in f or "🌋" in f or "🌪️" in f or d.score > 50:
                 risk_factors.append(f)
             elif d.score < 25:
                 mitigating.append(f)
@@ -400,4 +454,5 @@ def calculate_risk(data: SubmissionData) -> RiskProfile:
         risk_summary=" ".join(summary_parts),
         risk_factors=risk_factors,
         mitigating_factors=mitigating,
+        location_intelligence=location_intelligence,
     )

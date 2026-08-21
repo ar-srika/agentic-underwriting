@@ -12,6 +12,7 @@ import logging
 from typing import Optional
 
 from backend.config import settings
+from backend.connectors.geocoding_connector import geocode_address
 from backend.models.schemas import SubmissionData, SubmissionInput
 from backend.tools.document_parser import parse_submission_text
 
@@ -102,7 +103,8 @@ def run_intake_agent(submission: SubmissionInput) -> SubmissionData:
     Steps:
     1. Parse raw text using document_parser tool (regex extraction)
     2. Enhance with Gemini 3.5 for ambiguous fields
-    3. Apply defaults for critical missing fields
+    3. Call Open-Meteo Geocoding MCP Connector to normalize address & fetch lat/long
+    4. Apply sensible defaults for critical missing fields
 
     Args:
         submission: Raw submission input (text or PDF-extracted text).
@@ -118,7 +120,38 @@ def run_intake_agent(submission: SubmissionInput) -> SubmissionData:
     # Step 2: AI enhancement with Gemini
     parsed = _enhance_with_gemini(submission.raw_text, parsed)
 
-    # Step 3: Apply sensible defaults
+    # Step 3: MCP Open-Meteo Geocoding Connector (Address Normalization)
+    try:
+        geo_resp = geocode_address(
+            address=parsed.property_details.address,
+            city=parsed.property_details.city,
+            state=parsed.property_details.state,
+            zip_code=parsed.property_details.zip_code,
+        )
+        if geo_resp.success and geo_resp.data:
+            geo_data = geo_resp.data
+            parsed.property_details.latitude = geo_data.latitude
+            parsed.property_details.longitude = geo_data.longitude
+            parsed.property_details.elevation_m = geo_data.elevation_m
+            parsed.property_details.geocoding = geo_data
+
+            if not parsed.property_details.city and geo_data.city:
+                parsed.property_details.city = geo_data.city
+            if not parsed.property_details.state and geo_data.state_code:
+                parsed.property_details.state = geo_data.state_code
+            if not parsed.property_details.zip_code and geo_data.zip_code:
+                parsed.property_details.zip_code = geo_data.zip_code
+
+            source_tag = "Live Open-Meteo API" if not geo_resp.is_simulated else "Geospatial Simulation"
+            parsed.intake_notes.append(
+                f"📍 MCP Geocoding ({source_tag}): Normalized to '{geo_data.normalized_address}' "
+                f"(Lat: {geo_data.latitude:.4f}, Lon: {geo_data.longitude:.4f}, Elev: {geo_data.elevation_m:.1f}m)"
+            )
+    except Exception as e:
+        logger.warning(f"Intake geocoding MCP call failed: {e}")
+        parsed.intake_notes.append(f"⚠ MCP Geocoding unavailable: {str(e)[:80]}")
+
+    # Step 4: Apply sensible defaults
     if not parsed.business_info.business_type:
         parsed.business_info.business_type = "Small Business"
         parsed.intake_notes.append("ℹ Business type defaulted to 'Small Business'")

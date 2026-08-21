@@ -68,6 +68,76 @@ class SubmissionInput(BaseModel):
 
 
 # ────────────────────────────────────────────────────────────────────
+# Location Intelligence & MCP Connector Models
+# ────────────────────────────────────────────────────────────────────
+
+class GeocodingData(BaseModel):
+    """Normalized geographic data from Open-Meteo Geocoding MCP."""
+    normalized_address: str = ""
+    city: str = ""
+    state: str = ""
+    state_code: str = ""
+    zip_code: str = ""
+    country: str = "United States"
+    latitude: float = 0.0
+    longitude: float = 0.0
+    elevation_m: float = 0.0
+    timezone: str = ""
+    confidence: float = 1.0
+    is_simulated: bool = False
+
+
+class FEMAFloodData(BaseModel):
+    """Flood hazard data from FEMA Flood Zone MCP."""
+    flood_zone: str = "Zone X"  # Zone VE, AE, A, X500, X
+    is_sfha: bool = False  # Special Flood Hazard Area (100-yr flood zone)
+    base_flood_elevation_ft: Optional[float] = None
+    flood_depth_estimate_ft: float = 0.0
+    annual_flood_probability: float = 0.01
+    flood_risk_score: float = 20.0  # 0-100
+    fema_community_name: str = ""
+    summary: str = ""
+    is_simulated: bool = False
+
+
+class USGSSeismicData(BaseModel):
+    """Earthquake hazard data from USGS Seismic MCP."""
+    seismic_zone: str = "Zone 1"  # Zone 1 (low) to Zone 4 (critical)
+    fault_line_proximity_km: float = 100.0
+    nearest_fault_name: str = ""
+    max_magnitude_nearby: float = 0.0
+    earthquake_count_10yr: int = 0
+    peak_ground_acceleration_g: float = 0.05
+    seismic_risk_score: float = 15.0  # 0-100
+    summary: str = ""
+    is_simulated: bool = False
+
+
+class OpenMeteoWeatherData(BaseModel):
+    """Weather and windstorm exposure from Open-Meteo Weather MCP."""
+    max_wind_gust_mph: float = 45.0
+    hurricane_exposure_tier: str = "None"  # None, Tier 1, Tier 2, Tier 3, Tier 4, Tier 5
+    annual_precipitation_inches: float = 35.0
+    severe_convective_storm_risk: str = "Low"
+    weather_risk_score: float = 20.0  # 0-100
+    summary: str = ""
+    is_simulated: bool = False
+
+
+class LocationIntelligenceReport(BaseModel):
+    """Unified location risk research aggregated across all MCP connectors."""
+    submission_id: str = ""
+    geocoding: Optional[GeocodingData] = None
+    fema_flood: Optional[FEMAFloodData] = None
+    usgs_seismic: Optional[USGSSeismicData] = None
+    open_meteo_weather: Optional[OpenMeteoWeatherData] = None
+    composite_location_score: float = 20.0  # 0-100
+    hazard_alerts: List[str] = Field(default_factory=list)
+    fetched_at: datetime = Field(default_factory=datetime.utcnow)
+    mcp_latency_ms: float = 0.0
+
+
+# ────────────────────────────────────────────────────────────────────
 # Parsed Submission Data  (output of Intake Agent)
 # ────────────────────────────────────────────────────────────────────
 
@@ -86,6 +156,11 @@ class PropertyDetails(BaseModel):
     has_security_system: bool = False
     roof_condition: str = "Good"
     last_renovation_year: Optional[int] = None
+    # Geocoding enrichment from MCP
+    latitude: float = 0.0
+    longitude: float = 0.0
+    elevation_m: float = 0.0
+    geocoding: Optional[GeocodingData] = None
 
 
 class BusinessInfo(BaseModel):
@@ -151,6 +226,8 @@ class RiskProfile(BaseModel):
     risk_summary: str = ""
     risk_factors: List[str] = Field(default_factory=list)
     mitigating_factors: List[str] = Field(default_factory=list)
+    # External MCP location intelligence
+    location_intelligence: Optional[LocationIntelligenceReport] = None
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -225,6 +302,7 @@ class UnderwritingDecision(BaseModel):
     risk_profile: Optional[RiskProfile] = None
     pricing: Optional[PricingRecommendation] = None
     compliance: Optional[ComplianceReport] = None
+    location_intelligence: Optional[LocationIntelligenceReport] = None
 
     # Human-in-loop
     requires_human_review: bool = False

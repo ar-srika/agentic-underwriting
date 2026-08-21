@@ -13,15 +13,16 @@ def test_health_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert data["agents_registered"] == 6
+    assert data["agents_registered"] >= 6
 
 
 def test_agent_registry_endpoint():
     response = client.get("/api/v1/registry")
     assert response.status_code == 200
     agents = response.json()
-    assert len(agents) == 6
+    assert len(agents) >= 6
     assert any(a["agent_id"] == "intake-agent" for a in agents)
+    assert any(a["agent_id"] == "mcp-open-meteo-geocoding" for a in agents)
 
 
 def test_underwrite_api_endpoint(low_risk_submission):

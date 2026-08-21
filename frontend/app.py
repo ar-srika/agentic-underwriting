@@ -609,6 +609,42 @@ def render_agent_deep_dive(agent_id: str, decision: UnderwritingDecision | None 
             "tools": ["executive_summarizer", "portfolio_analyzer", "trend_detector"],
             "description": "Generates board-ready executive summaries, identifies portfolio-level risk concentrations in natural hazard zones, tracks capped premium impacts, and suggests continuous underwriting improvements.",
         },
+        "mcp-open-meteo-geocoding": {
+            "name": "Open-Meteo Geocoding MCP",
+            "icon": "📍",
+            "department": "External Intelligence / MCP",
+            "version": "1.0.0",
+            "role": "Municipal Address Normalization & Spatial Coordinate Resolution",
+            "tools": ["open_meteo_geocoding_api", "spatial_normalizer"],
+            "description": "Sub-agent data fetcher that queries Open-Meteo Geocoding REST endpoints to decompose raw address text into verified city, state, postal code, latitude, longitude, and elevation metrics.",
+        },
+        "mcp-fema-flood": {
+            "name": "FEMA Flood Zone MCP",
+            "icon": "🌊",
+            "department": "External Intelligence / MCP",
+            "version": "1.0.0",
+            "role": "FEMA NFHL Flood Zone Classification & Inundation Rating",
+            "tools": ["fema_nfhl_gis", "open_fema_api"],
+            "description": "Sub-agent data fetcher that queries FEMA National Flood Hazard Layer (NFHL) GIS data to determine Special Flood Hazard Area (SFHA) status (Zone VE, AE, A, X) and calculate base flood elevations.",
+        },
+        "mcp-usgs-seismic": {
+            "name": "USGS Seismic MCP",
+            "icon": "🌋",
+            "department": "External Intelligence / MCP",
+            "version": "1.0.0",
+            "role": "USGS Earthquake Cataloging, Fault Proximity & PGA Rating",
+            "tools": ["usgs_earthquake_api", "fault_line_database"],
+            "description": "Sub-agent data fetcher that connects to USGS Earthquake Hazards APIs to evaluate real-time fault line proximity, historical M3.5+ earthquake frequency, and Peak Ground Acceleration (PGA).",
+        },
+        "mcp-open-meteo-weather": {
+            "name": "Open-Meteo Weather MCP",
+            "icon": "🌪️",
+            "department": "External Intelligence / MCP",
+            "version": "1.0.0",
+            "role": "Hurricane Exposure Tiering, Peak Wind Gusts & Storm Telemetry",
+            "tools": ["open_meteo_forecast_api", "climate_extremes_engine"],
+            "description": "Sub-agent data fetcher that queries Open-Meteo weather APIs to determine tropical cyclone exposure tiers (Cat 1–5), max recorded wind gusts, and severe convective precipitation risk.",
+        },
     }
 
     info = agent_info.get(agent_id, agent_info["intake-agent"])
@@ -644,12 +680,12 @@ def render_agent_deep_dive(agent_id: str, decision: UnderwritingDecision | None 
                 st.markdown("""
                 **Step-by-Step Logic Applied:**
                 1. **Regex Entity Harvester**: Scans text for 8 key underwriting entity groups.
-                2. **Address Decomposition Engine**: Parses composite address lines into separate `Street`, `City`, `State`, and `ZIP Code` for geospatial rating.
+                2. **Open-Meteo Geocoding MCP**: Queries geospatial coordinates, normalizes jurisdiction, and determines elevation.
                 3. **Multimodal / Gemini 3.5 Fallback**: Analyzes missing fields with contextual understanding.
                 4. **Completeness Scoring**: Computes extraction confidence percentage.
                 """)
                 if sd and sd.intake_notes:
-                    st.markdown("**Parser Observations:**")
+                    st.markdown("**Parser & MCP Observations:**")
                     for note in sd.intake_notes:
                         st.markdown(f"- `{note}`")
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -662,25 +698,27 @@ def render_agent_deep_dive(agent_id: str, decision: UnderwritingDecision | None 
                     - **Business Name**: `{sd.business_info.business_name or 'N/A'}` (`{sd.business_info.business_type}`)
                     - **Financials**: Revenue **`${sd.business_info.annual_revenue:,.0f}`** | **`{sd.business_info.employee_count}`** Employees
                     - **Location**: `{sd.property_details.address}`, `{sd.property_details.city}`, `{sd.property_details.state}` `{sd.property_details.zip_code}`
+                    - **Geospatial Coords**: Lat: **`{sd.property_details.latitude:.4f}`**, Lon: **`{sd.property_details.longitude:.4f}`** (Elev: `{sd.property_details.elevation_m:.1f}m`)
                     - **Property Valuation**: **`${sd.property_details.property_value:,.0f}`** ({sd.property_details.building_age_years}yr old)
                     - **Loss Record**: **`{sd.claims_history.total_claims_3yr}`** claims in 3yr (Largest: `${sd.claims_history.largest_claim_amount:,.0f}`)
                     """)
-                    st.success("✅ **Verdict**: Structured data successfully normalized and transmitted to Risk Profiling Agent.")
+                    st.success("✅ **Verdict**: Structured data & MCP spatial coordinates normalized and transmitted to Risk Profiling Agent.")
                 st.markdown('</div>', unsafe_allow_html=True)
 
         # ── 2. RISK PROFILING AGENT DRILLDOWN ───────────────────────
         elif agent_id == "risk-agent":
             rp = decision.risk_profile
             with col_logic:
-                st.markdown('<div class="enterprise-card"><div class="card-header">⚙️ 6-Dimensional Risk Algorithm</div>', unsafe_allow_html=True)
+                st.markdown('<div class="enterprise-card"><div class="card-header">⚙️ 6-Dimensional & MCP Risk Algorithm</div>', unsafe_allow_html=True)
                 st.markdown("""
                 **Mathematical Formula:**
                 $$\\text{Composite Score} = \\sum_{i=1}^{6} (\\text{Dimension Score}_i \\times \\text{Weight}_i)$$
+                $$\\text{Location Dimension} = 0.40 \\cdot \\text{FEMA Flood} + 0.30 \\cdot \\text{USGS Seismic} + 0.30 \\cdot \\text{Open-Meteo Wind}$$
 
                 | Dimension | Weight | Primary Evaluation Criteria |
                 |---|:---:|---|
                 | **Property Risk** | 20% | Building age, fire/theft safety systems, construction type, roof |
-                | **Location Risk** | 20% | Natural hazard zones (FEMA Flood AE/VE, Seismic 4, Wildfire WUI) |
+                | **Location Risk (MCP)** | 20% | Real-time FEMA Flood NFHL, USGS Seismic faults, Open-Meteo windstorms |
                 | **Financial Risk** | 15% | Annual revenue scale, longevity in business, financial resilience |
                 | **Claims Risk** | 20% | Prior 3yr/5yr claim frequency and maximum claim severity |
                 | **Operational Risk** | 15% | Industry hazard tier, employee exposure, workforce scale |
@@ -758,26 +796,28 @@ def render_agent_deep_dive(agent_id: str, decision: UnderwritingDecision | None 
                 | **FIN-002** | Underinsurance | Coverage limit $\ge 80\%$ of property value |
                 | **ENV-001** | Hazard Disclosure | Natural hazard disclosure & underwriter notice |
                 | **CLM-001** | Claims Frequency | Loss record within maximum acceptable bounds |
-                | **FRN-001** | Fair Lending | Non-discriminatory risk-based evaluation |
-                | **DAT-001** | Data Quality | All mandatory fields populated |
-                | **SEC-001** | PII Protection | Sensitive data redaction active |
+                | **FR-001** | Rate Reasonableness | Surcharges do not exceed 2.5× baseline rate |
+                | **SEC-001** | Model Armor Scanner | Injection prevention & PII token protection |
+                | **AUD-001** | Audit Trail Logging | Cryptographic hash & immutable decision trace |
                 """)
                 st.markdown('</div>', unsafe_allow_html=True)
 
             with col_verdict:
                 st.markdown('<div class="enterprise-card"><div class="card-header">⚖️ Compliance Audit Verdict</div>', unsafe_allow_html=True)
                 if cp:
+                    comp_color = "#2e7d32" if cp.overall_status.value == "Pass" else "#e65100" if cp.overall_status.value == "Warning" else "#c62828"
                     st.markdown(f"""
-                    - **Overall Status**: **`{cp.overall_status.value}`**
-                    - **Compliance Score**: **`{cp.compliance_score}%`**
-                    - **Rules Passed**: `{cp.passed_count} / {len(cp.checks)}`
-                    - **Warnings**: `{cp.warning_count}` &ensp;|&ensp; **Failures**: `{cp.failed_count}`
-                    - **Human Review Flag**: `{'Yes — Mandatory Review Required' if cp.requires_manual_review else 'No — All Clear'}`
+                    - **Statutory Audit Score**: **<span style="font-size:1.3rem; color:{comp_color}; font-weight:700;">{cp.compliance_score}%</span>**
+                    - **Overall Regulatory Status**: **`<span style="color:{comp_color};">{cp.overall_status.value}</span>`**
+                    - **Passed Rules**: `{cp.passed_count} / {len(cp.checks)}`
+                    - **Warning Triggers**: `{cp.warning_count}` | **Violations**: `{cp.failed_count}`
                     """)
-                    if cp.review_reasons:
-                        st.markdown("**Review Items Identified:**")
-                        for r in cp.review_reasons[:3]:
-                            st.markdown(f"- ⚠️ {r}")
+                    if cp.overall_status.value == "Pass":
+                        st.success("✅ **Statutory Clearance**: All 10 regulatory, financial, and security rules fully satisfied.")
+                    elif cp.overall_status.value == "Warning":
+                        st.warning(f"⚠️ **Review Flags**: {'; '.join(cp.review_reasons[:2])}")
+                    else:
+                        st.error(f"🚫 **Statutory Violation**: {'; '.join(cp.review_reasons[:2])}")
                 st.markdown('</div>', unsafe_allow_html=True)
 
         # ── 5. ORCHESTRATOR AGENT DRILLDOWN ─────────────────────────
@@ -786,14 +826,9 @@ def render_agent_deep_dive(agent_id: str, decision: UnderwritingDecision | None 
                 st.markdown('<div class="enterprise-card"><div class="card-header">⚙️ Tripartite Decision Matrix</div>', unsafe_allow_html=True)
                 st.markdown("""
                 **Deterministic Triage Hierarchy:**
-                ```mermaid
-                flowchart TD
-                    START[Multi-Agent Outputs] --> C1{Auto-Decline Triggered?<br/>Score >80 OR Fraud OR Prohibited}
-                    C1 -- Yes --> DEC[🚫 AUTO-DECLINE]
-                    C1 -- No --> C2{Hazard Zone Detected?<br/>OR Score 36-65 OR Warning}
-                    C2 -- Yes --> REV[⚠️ MANUAL REVIEW<br/>Human Underwriter Queue]
-                    C2 -- No --> APP[✅ AUTO-APPROVE<br/>Straight-Through Binding]
-                ```
+                - **Auto-Decline Trigger**: Score > 80, Prohibited industry class, or prior cancellation for fraud.
+                - **Manual Review Trigger**: Natural hazard zone detected, Score 36–65, or compliance warning flag.
+                - **Auto-Approve Clearance**: Score ≤ 35, all 10 statutory rules pass, standard property profile.
                 """)
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -830,6 +865,230 @@ def render_agent_deep_dive(agent_id: str, decision: UnderwritingDecision | None 
                     for ins in decision.portfolio_insights:
                         st.markdown(f"- 📌 {ins}")
                 st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── 7. OPEN-METEO GEOCODING MCP DRILLDOWN ───────────────────
+        elif agent_id == "mcp-open-meteo-geocoding":
+            with col_logic:
+                st.markdown('<div class="enterprise-card"><div class="card-header">⚙️ Spatial Normalization Protocol</div>', unsafe_allow_html=True)
+                st.markdown("""
+                **API Endpoint**: `https://geocoding-api.open-meteo.com/v1/search`
+                **Protocol**: REST / JSON with Geospatial Fallback
+                **Extracted Dimensions**:
+                - Verified Administrative Boundaries (`City`, `State`, `Country`)
+                - Decimal Precision Geocoordinates (`Latitude`, `Longitude`)
+                - Topographic Elevation (`Meters above sea level`)
+                - Canonical Postal Formatting
+                """)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with col_verdict:
+                st.markdown('<div class="enterprise-card"><div class="card-header">📍 Normalized Spatial Telemetry</div>', unsafe_allow_html=True)
+                loc = decision.location_intelligence
+                geo = loc.geocoding if loc else (decision.submission_data.property_details.geocoding if decision.submission_data else None)
+                if geo:
+                    st.markdown(f"""
+                    - **Normalized Address**: **`{geo.normalized_address}`**
+                    - **Coordinates**: **`Lat: {geo.latitude:.4f}, Lon: {geo.longitude:.4f}`**
+                    - **Elevation**: **`{geo.elevation_m:.1f} m`** (Topographic Height)
+                    - **Timezone**: `{geo.timezone}`
+                    - **Resolution Confidence**: **`{geo.confidence * 100:.0f}%`**
+                    - **Data Source**: {'🛰️ Live Open-Meteo API' if not geo.is_simulated else '🌐 Geospatial Simulation'}
+                    """)
+                    st.success("✅ **Status**: Spatial normalization verified and fed to risk modeling pipeline.")
+                else:
+                    st.info("No geocoding payload recorded.")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── 8. FEMA FLOOD ZONE MCP DRILLDOWN ────────────────────────
+        elif agent_id == "mcp-fema-flood":
+            with col_logic:
+                st.markdown('<div class="enterprise-card"><div class="card-header">⚙️ FEMA NFHL Inundation Criteria</div>', unsafe_allow_html=True)
+                st.markdown("""
+                **Data Layer**: FEMA National Flood Hazard Layer (NFHL) GIS
+                **Zone Classifications**:
+                - **Zone VE**: Velocity coastal surge with wave action (≥ 3 ft waves)
+                - **Zone AE**: 100-year base floodplain with Base Flood Elevation (BFE)
+                - **Zone A**: 100-year shallow/riverine floodplain without BFE
+                - **Zone X (Unshaded)**: Minimal risk outside 500-year floodplain
+                """)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with col_verdict:
+                st.markdown('<div class="enterprise-card"><div class="card-header">🌊 FEMA Flood Hazard Verdict</div>', unsafe_allow_html=True)
+                loc = decision.location_intelligence
+                fema = loc.fema_flood if loc else None
+                if fema:
+                    fema_color = "#c62828" if fema.flood_risk_score >= 70 else "#e65100" if fema.flood_risk_score >= 40 else "#2e7d32"
+                    st.markdown(f"""
+                    - **Flood Zone**: **`<span style="color:{fema_color}; font-size:1.1rem; font-weight:700;">{fema.flood_zone}</span>`**
+                    - **SFHA Status**: **`{'🔴 Mandatory SFHA Insurance Zone' if fema.is_sfha else '🟢 Non-SFHA Minimal Hazard'}`**
+                    - **Flood Risk Score**: **<span style="color:{fema_color}; font-weight:700;">{fema.flood_risk_score}/100</span>**
+                    - **Base Flood Elevation**: `{f'{fema.base_flood_elevation_ft} ft' if fema.base_flood_elevation_ft else 'Not applicable'}`
+                    - **Annual Inundation Probability**: `{fema.annual_flood_probability * 100:.1f}%`
+                    - **Summary**: *{fema.summary}*
+                    """)
+                    if fema.is_sfha:
+                        st.warning("⚠️ **Underwriting Notice**: Property falls in FEMA Special Flood Hazard Area.")
+                    else:
+                        st.success("✅ **Clean Flood Record**: Property is located in minimal flood exposure zone.")
+                else:
+                    st.info("No FEMA flood telemetry available.")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── 9. USGS SEISMIC MCP DRILLDOWN ───────────────────────────
+        elif agent_id == "mcp-usgs-seismic":
+            with col_logic:
+                st.markdown('<div class="enterprise-card"><div class="card-header">⚙️ USGS Seismic Ground Motion Rules</div>', unsafe_allow_html=True)
+                st.markdown("""
+                **Data Catalog**: USGS Real-time & Historical Earthquake Feed
+                **Key Rating Metrics**:
+                - **Fault Proximity**: Distance to nearest active tectonic fault line (< 20 km = Critical)
+                - **Peak Ground Acceleration (PGA)**: Shake intensity expressed in gravitational force (%g)
+                - **10-Year M3.5+ Event Frequency**: Statistical seismic activity rate in 150km radius
+                """)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with col_verdict:
+                st.markdown('<div class="enterprise-card"><div class="card-header">🌋 USGS Earthquake Hazard Verdict</div>', unsafe_allow_html=True)
+                loc = decision.location_intelligence
+                seismic = loc.usgs_seismic if loc else None
+                if seismic:
+                    seis_color = "#c62828" if seismic.seismic_risk_score >= 70 else "#e65100" if seismic.seismic_risk_score >= 40 else "#2e7d32"
+                    st.markdown(f"""
+                    - **Seismic Zone**: **`<span style="color:{seis_color}; font-size:1.1rem; font-weight:700;">{seismic.seismic_zone}</span>`**
+                    - **Seismic Risk Score**: **<span style="color:{seis_color}; font-weight:700;">{seismic.seismic_risk_score}/100</span>**
+                    - **Peak Ground Acceleration (PGA)**: **`{seismic.peak_ground_acceleration_g}g`**
+                    - **Nearest Active Fault**: `{seismic.nearest_fault_name}` ({seismic.fault_line_proximity_km:.1f} km away)
+                    - **10-Year M3.5+ Events**: `{seismic.earthquake_count_10yr} events` (Max Mag: `M{seismic.max_magnitude_nearby:.1f}`)
+                    - **Summary**: *{seismic.summary}*
+                    """)
+                    if seismic.seismic_risk_score >= 65:
+                        st.warning("⚠️ **Tectonic Flag**: High ground shaking and liquefaction vulnerability.")
+                    else:
+                        st.success("✅ **Stable Tectonic Profile**: Low earthquake vulnerability in continental craton.")
+                else:
+                    st.info("No USGS seismic telemetry available.")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── 10. OPEN-METEO WEATHER MCP DRILLDOWN ────────────────────
+        elif agent_id == "mcp-open-meteo-weather":
+            with col_logic:
+                st.markdown('<div class="enterprise-card"><div class="card-header">⚙️ Tropical Cyclone & Wind Load Model</div>', unsafe_allow_html=True)
+                st.markdown("""
+                **Telemetry Source**: Open-Meteo High-Resolution Numerical Weather Prediction
+                **Exposure Categories**:
+                - **Tier 5**: Cat 5 Hurricane & Wind-Borne Debris Region (> 140 mph gusts)
+                - **Tier 4**: Cat 4 High-Velocity Hurricane Corridor (> 125 mph gusts)
+                - **Tier 3**: Cat 3 Tropical Storm Surge Basin (> 100 mph gusts)
+                - **Tier 2 / None**: Standard building code wind loading (< 65 mph gusts)
+                """)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with col_verdict:
+                st.markdown('<div class="enterprise-card"><div class="card-header">🌪️ Extreme Weather Exposure Verdict</div>', unsafe_allow_html=True)
+                loc = decision.location_intelligence
+                weather = loc.open_meteo_weather if loc else None
+                if weather:
+                    w_color = "#c62828" if weather.weather_risk_score >= 70 else "#e65100" if weather.weather_risk_score >= 40 else "#2e7d32"
+                    st.markdown(f"""
+                    - **Hurricane Exposure**: **`<span style="color:{w_color}; font-size:1.1rem; font-weight:700;">{weather.hurricane_exposure_tier}</span>`**
+                    - **Weather Risk Score**: **<span style="color:{w_color}; font-weight:700;">{weather.weather_risk_score}/100</span>**
+                    - **Peak Recorded Gusts**: **`{weather.max_wind_gust_mph:.1f} mph`**
+                    - **Annual Precipitation**: `{weather.annual_precipitation_inches:.1f} inches`
+                    - **Convective Storm Severity**: `{weather.severe_convective_storm_risk}`
+                    - **Summary**: *{weather.summary}*
+                    """)
+                    if weather.weather_risk_score >= 65:
+                        st.warning("⚠️ **Severe Wind Hazard**: Elevated structural vulnerability to tropical cyclonic systems.")
+                    else:
+                        st.success("✅ **Standard Wind Load**: Property within standard aerodynamic loading tolerances.")
+                else:
+                    st.info("No Open-Meteo weather telemetry available.")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+
+def render_location_intelligence_card(decision: UnderwritingDecision):
+    """Render comprehensive Location Intelligence & MCP telemetry card."""
+    loc = decision.location_intelligence
+    if not loc:
+        return
+
+    st.markdown('<div class="enterprise-card"><div class="card-header">🌍 Real-Time Location Intelligence & MCP External Feeds</div>', unsafe_allow_html=True)
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        geo = loc.geocoding
+        st.markdown("""
+        <div style="background:#f8f9fa; border:1px solid #e0e3eb; border-radius:8px; padding:12px; height:100%;">
+            <div style="font-weight:700; color:#1a237e; font-size:0.85rem; margin-bottom:6px;">📍 Open-Meteo Geocoding</div>
+        """, unsafe_allow_html=True)
+        if geo:
+            st.markdown(f"""
+            - **Coords**: `{geo.latitude:.4f}, {geo.longitude:.4f}`
+            - **Elevation**: `{geo.elevation_m:.1f}m`
+            - **Resolved**: `{geo.city}, {geo.state_code or geo.state}`
+            - **Confidence**: `{geo.confidence*100:.0f}%`
+            """)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col2:
+        fema = loc.fema_flood
+        st.markdown("""
+        <div style="background:#f8f9fa; border:1px solid #e0e3eb; border-radius:8px; padding:12px; height:100%;">
+            <div style="font-weight:700; color:#0277bd; font-size:0.85rem; margin-bottom:6px;">🌊 FEMA Flood Zone MCP</div>
+        """, unsafe_allow_html=True)
+        if fema:
+            f_badge = "🔴 SFHA High Risk" if fema.is_sfha else "🟢 Minimal Zone"
+            st.markdown(f"""
+            - **Zone**: **`{fema.flood_zone}`** ({f_badge})
+            - **Flood Score**: **`{fema.flood_risk_score}/100`**
+            - **Annual Prob**: `{fema.annual_flood_probability*100:.1f}%`
+            - **BFE**: `{f'{fema.base_flood_elevation_ft}ft' if fema.base_flood_elevation_ft else 'N/A'}`
+            """)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col3:
+        seismic = loc.usgs_seismic
+        st.markdown("""
+        <div style="background:#f8f9fa; border:1px solid #e0e3eb; border-radius:8px; padding:12px; height:100%;">
+            <div style="font-weight:700; color:#e65100; font-size:0.85rem; margin-bottom:6px;">🌋 USGS Seismic MCP</div>
+        """, unsafe_allow_html=True)
+        if seismic:
+            st.markdown(f"""
+            - **Zone**: **`{seismic.seismic_zone}`**
+            - **Seismic Score**: **`{seismic.seismic_risk_score}/100`**
+            - **PGA Intensity**: `{seismic.peak_ground_acceleration_g}g`
+            - **Fault Proximity**: `{seismic.fault_line_proximity_km:.1f}km`
+            """)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col4:
+        weather = loc.open_meteo_weather
+        st.markdown("""
+        <div style="background:#f8f9fa; border:1px solid #e0e3eb; border-radius:8px; padding:12px; height:100%;">
+            <div style="font-weight:700; color:#4527a0; font-size:0.85rem; margin-bottom:6px;">🌪️ Open-Meteo Weather MCP</div>
+        """, unsafe_allow_html=True)
+        if weather:
+            st.markdown(f"""
+            - **Hurricane Tier**: **`{weather.hurricane_exposure_tier}`**
+            - **Weather Score**: **`{weather.weather_risk_score}/100`**
+            - **Peak Wind Gusts**: `{weather.max_wind_gust_mph:.1f} mph`
+            - **Annual Rainfall**: `{weather.annual_precipitation_inches:.1f}"`
+            """)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    if loc.hazard_alerts:
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+        for alert in loc.hazard_alerts:
+            st.warning(alert)
+
+    st.markdown(f"""
+    <div style="font-size:0.75rem; color:#5f6368; margin-top:8px; text-align:right;">
+        ⚡ Sub-agent MCP Latency: <b>{loc.mcp_latency_ms}ms</b> &ensp;|&ensp; Composite Location Hazard Score: <b>{loc.composite_location_score}/100</b>
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def render_risk_radar(risk_profile):
@@ -1283,6 +1542,10 @@ if page == "🏠 Underwriting Desk":
                 "⚖️ Compliance Agent",
                 "🎯 Orchestrator Agent",
                 "📊 Feedback & Learning Agent",
+                "📍 Open-Meteo Geocoding MCP",
+                "🌊 FEMA Flood Zone MCP",
+                "🌋 USGS Seismic MCP",
+                "🌪️ Open-Meteo Weather MCP",
             ],
             index=0,
             label_visibility="collapsed",
@@ -1295,6 +1558,10 @@ if page == "🏠 Underwriting Desk":
             "⚖️ Compliance Agent": "compliance-agent",
             "🎯 Orchestrator Agent": "orchestrator-agent",
             "📊 Feedback & Learning Agent": "feedback-agent",
+            "📍 Open-Meteo Geocoding MCP": "mcp-open-meteo-geocoding",
+            "🌊 FEMA Flood Zone MCP": "mcp-fema-flood",
+            "🌋 USGS Seismic MCP": "mcp-usgs-seismic",
+            "🌪️ Open-Meteo Weather MCP": "mcp-open-meteo-weather",
         }
         selected_agent_id = agent_id_map.get(selected_agent, "intake-agent")
         render_agent_deep_dive(selected_agent_id, st.session_state.get("decision"))
@@ -1483,6 +1750,9 @@ if page == "🏠 Underwriting Desk":
         with tab_risk:
             if decision.risk_profile:
                 rp = decision.risk_profile
+
+                # Render real-time Location Intelligence & MCP Feeds card
+                render_location_intelligence_card(decision)
 
                 col_radar, col_details = st.columns([1, 1])
 

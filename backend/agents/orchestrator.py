@@ -324,6 +324,7 @@ def run_orchestrator(
         risk_profile=risk_profile,
         pricing=pricing,
         compliance=compliance,
+        location_intelligence=risk_profile.location_intelligence if risk_profile else None,
         requires_human_review=decision_type == DecisionType.MANUAL_REVIEW,
         review_priority="Critical" if risk_profile.is_hazard_zone else ("High" if decision_type == DecisionType.MANUAL_REVIEW else "Normal"),
         human_review_reasons=review_reasons,
