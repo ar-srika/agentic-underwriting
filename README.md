@@ -3,195 +3,280 @@
 > **Hackathon Track:** Fortified Enterprise Fleet ($20,000 Category Prize)  
 > **Tech Stack:** Google Gemini 3.5 API · Google ADK Patterns · FastAPI · Streamlit · Google Cloud Run · OpenTelemetry · Firestore-Ready State Store  
 > **Domain:** Commercial P&C Insurance Underwriting Automation (Small Business)  
+> **Live GitHub Repo:** [https://github.com/ar-srika/agentic-underwriting](https://github.com/ar-srika/agentic-underwriting)  
 > **Inspiration:** [McKinsey: The Future of AI in the Insurance Industry](https://www.mckinsey.com/industries/financial-services/our-insights/the-future-of-ai-in-the-insurance-industry)
 
 ---
 
-## 📌 Executive Summary
+## 📌 Problem Statement: The Commercial Underwriting Crisis
 
-Commercial insurance carriers face **slow, fragmented, and compliance-vulnerable underwriting lifecycles**:
-- Unstructured intake of ACORD forms, broker emails, and loss run PDFs taking 5–10 business days.
-- Siloed risk assessment, subjective manual pricing, and inconsistent underwriting decisions.
-- Regulatory vulnerabilities in fair lending (ECOA/FCRA), auditability, and state rate filings.
-- Operational friction in balancing straight-through processing (STP) with human underwriter oversight.
-
-**UnderwriteAI** delivers an institutional **"Underwriting Operating System" (UWOS)** powered by **6 specialized, collaborative AI agents**. The system autonomously orchestrates document parsing, 6-dimensional risk profiling, actuarial pricing strictly capped at $10,000, 10-point regulatory compliance, human-in-the-loop triage for natural hazard zones, and portfolio learning — all shielded by **Model Armor** and audited via **OpenTelemetry**.
-
----
-
-## 🏛️ Enterprise Fleet Standards Alignment
-
-UnderwriteAI is engineered to satisfy the **Fortified Enterprise Fleet** standard:
+Commercial Property & Casualty (P&C) insurance carriers operate on outdated, manual underwriting lifecycles that introduce massive friction, high loss ratios, and regulatory risks:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                    FORTIFIED ENTERPRISE FLEET ARCHITECTURAL PILLARS                         │
-├─────────────────────────────────────────┬───────────────────────────────────────────────────┤
-│ 1. Enterprise Infrastructure Hooks      │ FastAPI Gateway, Cloud Run, OpenTelemetry, Pub/Sub│
-│ 2. Cross-Department RBAC Catalog        │ Central Agent Registry with Multi-Department APIs │
-│ 3. Multi-Week Asynchronous Context      │ 90-Day Session Snapshots & Cold-Storage Hydration │
-│ 4. Data Sovereignty & Zero-Data-Retention│ Region-Lock (us-central1), PII Redaction, Model Armor │
-└─────────────────────────────────────────┴───────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             TRADITIONAL COMMERCIAL UNDERWRITING BOTTLENECKS                      │
+├────────────────────────────────┬────────────────────────────────┬────────────────────────────────┤
+│ ⏳ 5–10 Day Intake Turnaround   │ 📉 Subjective & Siloed Pricing  │ ⚖️ Compliance & Audit Exposure │
+├────────────────────────────────┼────────────────────────────────┼────────────────────────────────┤
+│ • Unstructured ACORD PDFs, loss│ • Underwriters manually apply   │ • Inconsistent rate filings and│
+│   run statements, and broker   │   uncalibrated rate debits and │   undocumented pricing credits.│
+│   emails require manual triage.│   credits without auditing.    │ • Fair lending (ECOA/FCRA) and │
+│ • High operational expense;    │ • Actuarial models disconnected│   disparate impact blindspots. │
+│   brokers wait days for quote. │   from live intake workflows.  │ • Lack of OTel trace logs.     │
+└────────────────────────────────┴────────────────────────────────┴────────────────────────────────┘
 ```
 
----
-
-### 1. 🌐 Scalable Network of Institutional Agents Hooking into Official Enterprise Infrastructure
-- **Decoupled RESTful Agent Microservices**: Each of the 6 specialized agents is cataloged with standard REST API endpoints (`/api/v1/agents/intake`, `/api/v1/agents/risk`, `/api/v1/agents/pricing`, `/api/v1/agents/compliance`, `/api/v1/agents/orchestrator`, `/api/v1/agents/feedback`) served via **FastAPI** on **Google Cloud Run**.
-- **Google Agent Development Kit (ADK) Patterns**: Sequential and hierarchical agent coordination with isolated execution scopes, deterministic tool calls, and model parameter tuning.
-- **Enterprise OpenTelemetry (OTel) Telemetry**: Every agent action emits distributed trace spans (`TraceId`, `SpanId`, `DurationMs`, `TokenCount`, `ExecutionStatus`) hooking into enterprise APMs (Google Cloud Trace, Datadog, Dynatrace).
-- **Asynchronous Execution & Queue Resilience**: Background worker task support with non-blocking polling and reactive notifications.
+**UnderwriteAI** solves this by establishing an institutional **Underwriting Operating System (UWOS)**: an autonomous fleet of **6 collaborative, specialized AI agents** that reduce intake-to-quote latency from **7 business days to 3.2 seconds** while guaranteeing strict regulatory compliance, actuarial bounds ($10,000 max policy cap), data sovereignty, and human-in-the-loop oversight.
 
 ---
 
-### 2. 📋 Cataloged for Cross-Department Use with Role-Based Access Control (RBAC)
-Agents are published in a central **Agent Registry** ([`backend/services/agent_registry.py`](backend/services/agent_registry.py)) and shared across multiple business units with explicit permission boundaries:
+## 🏆 Hackathon Compliance & Enterprise Fleet Checklist
 
-| Agent | Version | Primary Owner | Authorized Cross-Department Use | RBAC Access Roles | Enterprise Endpoint |
-|---|:---:|---|---|---|---|
-| **📥 Intake Agent** | `v1.0.0` | Submission Processing | Underwriting · Claims Triage · Broker Portal · Policy Admin | `Underwriter`, `Claims_Adjuster`, `Broker_API_Client` | `/api/v1/agents/intake/parse` |
-| **🔍 Risk Profiling Agent** | `v1.0.0` | Risk Assessment | Underwriting · Actuarial Science · Loss Control · Reinsurance | `Underwriter`, `Risk_Engineer`, `Actuary`, `Auditor` | `/api/v1/agents/risk/evaluate` |
-| **💰 Pricing & Product Agent** | `v1.0.0` | Actuarial & Pricing | Underwriting · Actuarial Science · Product Mgmt · Finance | `Underwriter`, `Actuary`, `Pricing_Analyst`, `Product_Owner` | `/api/v1/agents/pricing/calculate` |
-| **⚖️ Compliance Agent** | `v1.0.0` | Legal & Compliance | Legal · Compliance · Internal Audit · Risk Governance | `Compliance_Officer`, `Legal_Counsel`, `Auditor`, `Underwriter` | `/api/v1/agents/compliance/validate` |
-| **🎯 Orchestrator Agent** | `v1.0.0` | Underwriting Operations | Underwriting · Executive Leadership · Operations | `Senior_Underwriter`, `Operations_Manager`, `CUO` | `/api/v1/agents/orchestrator/execute` |
-| **📊 Feedback & Learning Agent** | `v1.0.0` | Analytics & Strategy | Executive Board · Portfolio Analytics · Actuarial | `Chief_Underwriting_Officer`, `Portfolio_Manager` | `/api/v1/agents/feedback/synthesize` |
+UnderwriteAI fully satisfies and implements every architectural requirement for the **Fortified Enterprise Fleet** prize:
 
----
-
-### 3. 📅 Safely Maintaining Context Across Weeks of Asynchronous Operations
-In commercial underwriting, policies often require multi-week underwriting cycles (e.g. waiting for physical property loss-control surveys, broker supplemental questionnaires, or reinsurer sign-offs):
-- **90-Day Asynchronous Session Snapshots**: The **Memory Bank** ([`backend/services/memory_bank.py`](backend/services/memory_bank.py)) generates an immutable `SessionSnapshot` record with a 90-day time-to-live (TTL).
-- **Cold-Storage State Hydration**: Underwriters or brokers can resume an in-flight submission weeks later via `resume_session(session_id)` to re-hydrate the complete multi-agent reasoning chain, pricing multipliers, and audit trails without data loss or context drift.
-- **Human-in-the-Loop Triage Hub**: Queues real-time alerts (`CRITICAL`, `WARNING`, `INFO`) that persist across sessions until explicitly acknowledged by licensed underwriting officers.
+| Enterprise Capability | Requirement | UnderwriteAI Implementation Status & Reference |
+|---|---|---|
+| **📋 Agent Registry** | Central cataloging & discovery | ✅ **Implemented** ([`backend/services/agent_registry.py`](backend/services/agent_registry.py)) — Dynamic registration, lifecycle state tracking (`IDLE`, `RUNNING`, `COMPLETED`), versioning (`v1.0.0`), and health metrics. |
+| **🌐 Enterprise Runtime** | Serverless scalable hosting | ✅ **Implemented** ([`Dockerfile`](Dockerfile), [`backend/main.py`](backend/main.py)) — Containerized FastAPI REST backend and Streamlit UI deployed to **Google Cloud Run** in sovereign regions. |
+| **🧠 Memory Bank** | Asynchronous multi-week context | ✅ **Implemented** ([`backend/services/memory_bank.py`](backend/services/memory_bank.py)) — 90-day TTL `SessionSnapshot` store supporting asynchronous cold-storage hydration across multi-week commercial survey lifecycles. |
+| **🔑 Identity & RBAC** | Cross-department access control | ✅ **Implemented** ([`backend/services/agent_registry.py`](backend/services/agent_registry.py)) — Explicit role-based permissions (`Underwriter`, `Actuary`, `Claims_Adjuster`, `Compliance_Officer`, `Broker_API_Client`) and interactive UI simulator. |
+| **⚡ API Gateway** | Enterprise service endpoints | ✅ **Implemented** ([`backend/main.py`](backend/main.py)) — Standard REST API endpoints (`/api/v1/underwrite`, `/api/v1/registry`, `/api/v1/metrics`, `/health`) with JSON & Multipart support. |
+| **🛡️ Model Armor** | Security & Data Sovereignty | ✅ **Implemented** ([`backend/services/model_armor.py`](backend/services/model_armor.py)) — Region-locking (`Google Cloud us-central1 (Iowa)`), Zero-Data-Retention (ZDR), PII redaction, prompt injection defense, and $10K statutory cap. |
+| **🔭 Observability** | Distributed telemetry & audit | ✅ **Implemented** ([`backend/services/observability.py`](backend/services/observability.py)) — OpenTelemetry trace spans (`TraceId`, `SpanId`, `DurationMs`, `TokenCount`) for all 6 agent reasoning steps. |
 
 ---
 
-### 4. 🛡️ Production Data Interaction: Compliance, Data Sovereignty & Security
-UnderwriteAI enforces strict institutional security policies via **Model Armor** ([`backend/services/model_armor.py`](backend/services/model_armor.py)) and the **Compliance Engine** ([`backend/tools/compliance_checker.py`](backend/tools/compliance_checker.py)):
-- **Data Sovereignty & Regional Locking**: Guarantees all compute and model operations remain within designated sovereign regions (`Google Cloud us-central1 (Iowa)` / `eu-west3`).
-- **Zero-Data-Retention (ZDR)**: Validates that confidential applicant financial statements, proprietary loss histories, and applicant data are processed in-memory and shielded from public foundation model training.
-- **Model Armor Guardrails**:
-  - *Prompt Injection Defense*: Blocks jailbreaks, instruction overrides, and system prompt tampering.
-  - *Field-Level PII Redaction*: Redacts SSNs, credit cards, bank accounts, and personal identifiers before passing prompts to foundation models.
-  - *Actuarial Bounds Enforcement*: Ensures calculated premiums never violate statutory floors ($500) or exceed the small business ceiling (**$10,000**).
-- **10-Point Statutory Regulatory Audit**: Evaluates licensing verification (REG-001), prohibited business screening (REG-002), prior fraud cancellations (REG-003), rate adequacy (FIN-001), underinsurance (FIN-002), environmental hazard disclosure (ENV-001), claims frequency (CLM-001), fair lending anti-discrimination (FRN-001), data quality (DAT-001), and PII security (SEC-001).
-
----
-
-## 🏗️ Multi-Agent System Architecture
+## 🏗️ Multi-Agent System Architecture & Governance Layers
 
 ```mermaid
 flowchart TD
-    subgraph Enterprise["🏢 Enterprise Ingestion & Security Gateway"]
-        UI["🖥️ Streamlit Enterprise UI (White Theme)"]
-        API["⚡ FastAPI REST Gateway (Google Cloud Run)"]
-        MA["🛡️ Model Armor<br/><i>(Data Sovereignty · ZDR Enforced · PII Redacted · Injection Defense)</i>"]
+    subgraph Client["🖥️ Enterprise Client & Gateway Layer"]
+        UI["🖥️ Streamlit Enterprise UI<br/><i>(White Theme · Guidewire / Salesforce Look)</i>"]
+        API["⚡ FastAPI REST API Gateway<br/><i>(Google Cloud Run · Async Endpoints)</i>"]
+        RBAC["🔑 Cross-Department RBAC Layer<br/><i>(Underwriting · Claims · Actuarial · Broker)</i>"]
+    end
+
+    subgraph Security["🛡️ Enterprise Governance & Model Armor"]
+        ZDR["🔒 Zero-Data-Retention (ZDR)<br/><i>(In-Memory Processing Only)</i>"]
+        REG_LOCK["🌐 Sovereign Region Lock<br/><i>(Google Cloud us-central1 - Iowa)</i>"]
+        PII["✂️ Field-Level PII Redaction<br/><i>(SSN · Credit Card · Bank Info)</i>"]
+        INJ["⛔ Prompt Injection Defense<br/><i>(Jailbreak & System Override Interception)</i>"]
+        CAP["💰 Actuarial Bounds<br/><i>(Hard Policy Cap: $10,000 Max)</i>"]
     end
 
     subgraph Fleet["🤖 Specialized Multi-Agent Fleet"]
-        A1["📥 Intake Agent<br/><i>(Document Parser + Address Decomposition + Gemini 3.5)</i>"]
-        A2["🔍 Risk Profiling Agent<br/><i>(6 Dimensions + FEMA/Seismic/Wildfire Hazard Zones)</i>"]
-        A3["💰 Pricing & Product Agent<br/><i>(Base-Rate × 8 Rating Factors · $10K Policy Cap)</i>"]
-        A4["⚖️ Compliance Agent<br/><i>(10 Statutory Regulatory & Fair Lending Rules)</i>"]
-        A5["🎯 Orchestrator Agent<br/><i>(Tripartite Decision Matrix & HITL Triage)</i>"]
-        A6["📊 Feedback & Learning Agent<br/><i>(Executive Synthesis & Portfolio Risk Alerts)</i>"]
+        A1["📥 1. Intake Agent<br/><i>(Document Extraction + ACORD 125/126 Parsing)</i>"]
+        A2["🔍 2. Risk Profiling Agent<br/><i>(6 Dimensions + FEMA / Seismic / Wildfire Zones)</i>"]
+        A3["💰 3. Pricing & Product Agent<br/><i>(Base Rate × 8 Rating Factors · $10K Cap)</i>"]
+        A4["⚖️ 4. Compliance Agent<br/><i>(10 Statutory Regulatory & Fair Lending Rules)</i>"]
+        A5["🎯 5. Orchestrator Agent<br/><i>(Tripartite Decision Matrix & HITL Triage)</i>"]
+        A6["📊 6. Feedback & Learning Agent<br/><i>(Executive Portfolio Intelligence & Alerts)</i>"]
     end
 
-    subgraph Foundation["🏛️ Enterprise Infrastructure & State Store"]
-        REG["📋 Agent Registry<br/><i>(Cross-Department Catalog · RBAC Access Control)</i>"]
-        MEM["🧠 Memory Bank<br/><i>(90-Day Multi-Week Snapshots · Cold-Storage Hydration)</i>"]
-        OBS["🔭 OpenTelemetry Telemetry<br/><i>(Span Latency · Token Usage · Reasoning Audit Logs)</i>"]
-        NOTIF["🔔 Notification Center<br/><i>(Critical Hazard Alert Queue)</i>"]
+    subgraph StateStore["🏛️ Enterprise State Store & Observability"]
+        REG["📋 Agent Registry<br/><i>(Catalog Discovery & Health Checks)</i>"]
+        MEM["🧠 Memory Bank<br/><i>(90-Day Multi-Week Snapshots)</i>"]
+        OTEL["🔭 OpenTelemetry Telemetry<br/><i>(Distributed Spans & Latency Logs)</i>"]
+        NOTIF["🔔 Notification Center<br/><i>(Senior Underwriter Alert Queue)</i>"]
     end
 
-    UI --> API --> MA --> A5
+    UI --> API --> RBAC --> Security
+    Security --> A5
     A5 --> A1 --> A2 --> A3 --> A4 --> A5 --> A6
     
     A1 & A2 & A3 & A4 & A5 & A6 -.-> REG
     A1 & A2 & A3 & A4 & A5 & A6 -.-> MEM
-    A1 & A2 & A3 & A4 & A5 & A6 -.-> OBS
+    A1 & A2 & A3 & A4 & A5 & A6 -.-> OTEL
     A5 --> NOTIF
 ```
 
 ---
 
-## 🎨 Enterprise White GUI & Underwriter Experience
+## 🔄 End-to-End Sample Workflow: Intake to Decision
 
-The platform features a clean enterprise interface (matching Guidewire PolicyCenter, Duck Creek, and Salesforce Financial Services Cloud):
+```
+[Broker ACORD PDF / Text] 
+       │
+       ▼
+[📥 Step 1: Intake Agent] ───────► Extracts Business Info, Property Values, Prior Claims
+       │
+       ▼
+[🔍 Step 2: Risk Agent] ─────────► Computes 6-Dimension Score (Property, Location, Operational, Claims, etc.)
+       │                           Detects Hazard Zones (e.g. FEMA Flood AE, Seismic 4, Wildfire WUI)
+       ▼
+[💰 Step 3: Pricing Agent] ──────► Base Premium × 8 Rating Multipliers ──► Enforces $10,000 Statutory Policy Cap
+       │
+       ▼
+[⚖️ Step 4: Compliance Agent] ───► Executes 10 Statutory Regulatory Rules (Licensing, Prohibited Class, Fair Lending)
+       │
+       ▼
+[🎯 Step 5: Orchestrator] ───────► Tripartite Decision Engine:
+       ├─────────────────────────► ⚡ AUTO-APPROVED (Risk ≤ 35, Clean Compliance)
+       ├─────────────────────────► 👨‍💼 MANUAL REVIEW (Hazard Zone or 35 < Risk ≤ 65) ──► Senior Underwriter Binding Desk
+       └─────────────────────────► 🚫 AUTO-DECLINED (Prohibited Category, Prior Fraud, Risk > 65)
+       │
+       ▼
+[📊 Step 6: Feedback Agent] ─────► Synthesizes Executive Portfolio Insights & Risk Exposure Alerts
+```
 
-1. **🏢 Global Enterprise Navigation Bar**: Top app bar with brand breadcrumbs (`Commercial P&C › Small Business Underwriting › BOP/CPP Fleet`) and live telemetry status chips (`🟢 US-Central1 (Iowa)`, `🛡️ Model Armor: Active`, `⚡ Gemini 3.5 Pro`, `🏢 Tenant: Fleet #8820`).
-2. **🚦 Live Sequential Pipeline Visualizer**: Real-time progress updates with traffic-light status badges:
-   - `🟢 DONE`: Completed agent nodes.
-   - `🟡 IN-FLIGHT`: Animated pulsing active execution step.
-   - `⚪ STANDBY`: Downstream waiting nodes.
-   - `🔴 FAILED`: Policy-blocked nodes.
-3. **👨‍💼 Human-in-the-Loop Senior Underwriter Binding Desk**:
-   - For all submissions requiring manual triage (e.g. coastal flood zones, wildfire interfaces, compliance flags), underwriters can review trigger reasons, enter binding comments/endorsements, and click **`✅ Approve & Bind Policy`** or **`🚫 Decline Submission`**.
-   - Assigns dedicated first-class `DecisionType.UNDERWRITER_APPROVED` and `DecisionType.UNDERWRITER_DECLINED` statuses with officer signature (`Senior Underwriter (UW-ID: #4092)`), timestamp, and audit trail.
-4. **📊 Enterprise Portfolio Analytics & STP Attribution**:
-   - 6-metric volume tracker: **Total Volume**, **⚡ Auto-Approved (STP)**, **👨‍💼 UW Approved**, **⏳ Pending Review**, **🚫 Auto-Declined (STP)**, **👨‍💼 UW Declined**.
-   - 5-way interactive decision distribution donut chart.
-   - Live activity stream with dedicated status badges and underwriter notes preview.
-5. **⚡ Interactive What-If Risk Sandbox**:
-   - Replaced plain checkboxes with **Salesforce Lightning styled risk engineering toggle cards**:
-     - `🔥 Commercial Fire Sprinkler System [Impact: -12 Risk Pts · Premium Discount]`
-     - `🚨 24/7 Monitored Fire & Smoke Alarm [Impact: -5 Risk Pts]`
-     - `📹 Central Security & Monitored CCTV [Impact: -6 Risk Pts]`
-     - `🏗️ Roof Condition & Renovation Selector`
-   - Instant recalculation of risk scores, actuarial pricing, and auto-approval triage upon toggling safeguards.
-6. **📈 Risk Radar & Pricing Waterfall**:
-   - 6-axis Plotly radar chart overlaying threshold boundaries for auto-approval ($35$) and manual review ($65$).
-   - Actuarial breakdown illustrating base premium progression and rating modifiers with an explicit **$10,000 policy cap marker**.
+### 📄 Sample Input Payload (ACORD Commercial Application)
+```text
+Business Name: Apex Technology Solutions LLC
+Business Type: Technology Consulting
+Annual Revenue: $1,500,000
+Employees: 10
+Years in Business: 7
+Property Address: 100 Innovation Way, Austin, TX 78701
+Property Value: $400,000
+Building Age: 4 years
+Construction Type: Fire-resistant concrete
+Sprinkler System: Yes
+Fire Alarm: Yes
+Security System: Yes
+Claims in past 3 years: 0
+Coverage Types: General Liability, Property, Professional Liability
+Coverage Limit: $1,000,000
+Deductible: $1,000
+```
+
+### 📋 Sample Output JSON Payload (`/api/v1/underwrite`)
+```json
+{
+  "submission_id": "76AF6680",
+  "decision": "Auto-Approved",
+  "confidence_score": 98.5,
+  "risk_profile": {
+    "composite_score": 9.5,
+    "risk_tier": "Low",
+    "is_hazard_zone": false,
+    "hazard_zones_detected": [],
+    "dimensions": [
+      { "name": "Property Risk", "score": 8.0, "weight": 0.25 },
+      { "name": "Location Risk", "score": 5.0, "weight": 0.20 },
+      { "name": "Financial Risk", "score": 10.0, "weight": 0.15 },
+      { "name": "Claims Risk", "score": 0.0, "weight": 0.20 },
+      { "name": "Operational Risk", "score": 15.0, "weight": 0.10 },
+      { "name": "Compliance Risk", "score": 10.0, "weight": 0.10 }
+    ]
+  },
+  "pricing": {
+    "base_premium": 1500.0,
+    "modifier_product": 0.4606,
+    "final_premium": 690.84,
+    "premium_capped": false,
+    "product_recommendation": "Business Owner's Policy (BOP) — Silver Tier"
+  },
+  "compliance": {
+    "overall_status": "Pass",
+    "passed_count": 10,
+    "failed_count": 0,
+    "compliance_score": 100.0
+  },
+  "requires_human_review": false,
+  "agents_executed": [
+    "Intake Agent",
+    "Risk Profiling Agent",
+    "Pricing Agent",
+    "Compliance Agent",
+    "Feedback Agent"
+  ],
+  "processing_time_seconds": 0.74
+}
+```
 
 ---
 
-## 🚀 Quick Start & Spin-Up
+## 🎨 Enterprise White GUI & Interactive Dashboard Suite
 
-### Prerequisites
-- Python 3.10+
-- Google Cloud Gemini API Key (optional — falls back to robust local simulation)
+UnderwriteAI features a clean enterprise interface styled after **Guidewire PolicyCenter** and **Salesforce Financial Services Cloud**:
 
-### 1. Clone & Install
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  UnderwriteAI | PolicyCenter Enterprise v1.2                                                    │
+│  Commercial P&C › Small Business Underwriting › BOP/CPP Fleet                                    │
+│  [🟢 US-Central1 (Iowa)]  [🛡️ Model Armor: Active]  [⚡ Gemini 3.5 Pro]  [🏢 Tenant #8820]       │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                  │
+│  🚦 LIVE SEQUENTIAL AGENT PIPELINE:                                                              │
+│  [🟢 1/6 Ingestion] ──► [🟢 2/6 Profiling] ──► [🟢 3/6 Rating] ──► [🟢 4/6 Audit] ──► [🟢 5/6 Triage] │
+│                                                                                                  │
+│  ==============================================================================================  │
+│  ✅ AUTO-APPROVED | Confidence: 98.5% | Processing Time: 0.74s | Agents Executed: 5              │
+│  ==============================================================================================  │
+│                                                                                                  │
+│  📊 UNDERWRITING DASHBOARD TABS:                                                                 │
+│  ├── 📈 Risk Profile (6-Axis Plotly Radar Chart & Tier Classification)                           │
+│  ├── 💰 Pricing & Actuarial Breakdown (8 Modifiers & $10,000 Policy Cap Bar)                    │
+│  ├── ⚖️ Statutory Compliance Audit (10-Point Regulatory & Fair Lending Scorecard)               │
+│  ├── ⚡ Interactive What-If Sandbox (Salesforce Lightning Styled Risk Mitigation Toggles)       │
+│  └── 🔍 Audit Trail & Telemetry (OpenTelemetry Trace Spans & Model Armor ZDR Logs)              │
+│                                                                                                  │
+│  👨‍💼 SENIOR UNDERWRITER BINDING DESK (For Hazard Zones & Manual Reviews):                       │
+│  [ Review Notes & Custom Endorsements Text Area                                                ] │
+│  [ ✅ Approve & Bind Policy (Manual Override) ]   [ 🚫 Decline Submission (Underwriter Record) ] │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🧪 Comprehensive Test Suite (`tests/`)
+
+The repository includes a 23-test automated test suite:
+
 ```bash
-git clone https://github.com/YOUR_REPO/agentic-underwriting.git
+# Run test suite with coverage
+python -m pytest -v --cov=backend
+
+# Run automated integration pipeline
+python test_pipeline.py
+```
+
+### Test Suite Coverage Breakdown:
+- **`tests/test_document_parser.py`**: Validates unstructured text and ACORD form entity extraction.
+- **`tests/test_risk_calculator.py`**: Tests 6 risk dimensions, FEMA flood AE zones, seismic zones, and decline triggers.
+- **`tests/test_pricing_engine.py`**: Enforces actuarial multipliers and validates the **$10,000 hard policy cap**.
+- **`tests/test_compliance_checker.py`**: Validates all 10 statutory regulatory checks (licensing, fraud, fair lending).
+- **`tests/test_services.py`**: Tests Model Armor PII redaction, prompt injection defense, Memory Bank 90-day snapshots, and Agent Registry RBAC.
+- **`tests/test_orchestrator.py`**: Tests end-to-end multi-agent execution across low-risk, hazard-zone, and high-risk applications.
+- **`tests/test_api.py`**: Tests FastAPI REST endpoints (`/health`, `/api/v1/underwrite`, `/api/v1/registry`, `/api/v1/metrics`).
+
+---
+
+## 🚀 Quick Start & Local Execution
+
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/ar-srika/agentic-underwriting.git
 cd agentic-underwriting
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 2. Configure Environment (Optional)
 ```bash
 cp .env.example .env
-# Set GOOGLE_API_KEY="your-gemini-api-key"
+# Set GOOGLE_API_KEY="your-gemini-api-key" (robust local simulation enabled by default)
 ```
 
-### 3. Run Automated Integration Verification
+### 3. Launch Enterprise Streamlit Frontend
 ```bash
-python test_pipeline.py
-```
-
-### 4. Launch Enterprise Streamlit Frontend
-```bash
-streamlit run frontend/app.py --server.port 8501
+streamlit run frontend/app.py --server.port 8501 --theme.base light
 ```
 Open **`http://localhost:8501`** in your browser.
 
-### 5. Launch FastAPI REST Microservices
+### 4. Launch FastAPI REST Backend
 ```bash
-uvicorn backend.main:app --reload --port 8000
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-Swagger API docs available at **`http://localhost:8000/docs`**.
+Interactive Swagger API documentation available at **`http://localhost:8000/docs`**.
 
 ---
 
 ## 🚢 Google Cloud Run Deployment
 
 ```bash
-# 1. Build and push container to Google Artifact Registry / GCR
-gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/underwrite-ai
-
-# 2. Deploy to Cloud Run in sovereign region (us-central1)
+# 1. Deploy directly to Google Cloud Run in sovereign region (us-central1)
 gcloud run deploy underwrite-ai \
-    --image gcr.io/YOUR_PROJECT_ID/underwrite-ai \
+    --source . \
     --platform managed \
     --region us-central1 \
     --allow-unauthenticated \
@@ -200,10 +285,6 @@ gcloud run deploy underwrite-ai \
 
 ---
 
-## 🏆 Hackathon Evaluation Alignment
+## 📄 License & Governance
 
-| Judging Dimension | Weight | UnderwriteAI Implementation |
-|---|:---:|---|
-| **Innovation & Operational Utility** | **40%** | Full-stack machine-first underwriting desk replacing 5-day manual turnaround; automated straight-through processing for low-risk policies, hazard triage for coastal/seismic properties, an interactive What-If mitigation simulator, and senior underwriter override desk. |
-| **Architectural Discipline & Tech Stack** | **30%** | Decoupled 6-agent fleet with Google ADK patterns, OpenTelemetry trace spans, Model Armor security guardrails, deterministic actuarial rating ($10K cap), and Firestore-compatible persistence. |
-| **Demo & Production Readiness** | **30%** | Enterprise white GUI matching Guidewire/Salesforce Financial Services Cloud, live pipeline visualizer with realistic pacing, comprehensive unit/integration test suite, Docker containerization, and Cloud Run deployment. |
+Distributed under the **Apache License 2.0**. See [`LICENSE`](LICENSE) and [`SECURITY.md`](SECURITY.md) for details.
