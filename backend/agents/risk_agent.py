@@ -23,10 +23,6 @@ def _generate_risk_narrative(data: SubmissionData, profile: RiskProfile) -> str:
         return profile.risk_summary
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.GOOGLE_API_KEY)
-        model = genai.GenerativeModel(settings.GEMINI_MODEL)
-
         risk_factors_text = "\n".join(f"- {f}" for f in profile.risk_factors) if profile.risk_factors else "None identified"
         mitigating_text = "\n".join(f"- {f}" for f in profile.mitigating_factors) if profile.mitigating_factors else "None identified"
 
@@ -46,8 +42,8 @@ Mitigating Factors:
 
 Write a professional underwriting risk narrative. Be specific about the key concerns and positives. Keep it under 100 words."""
 
-        response = model.generate_content(prompt)
-        return response.text.strip()
+        result = settings.call_gemini(prompt).strip()
+        return result or profile.risk_summary
 
     except Exception as e:
         logger.warning(f"Risk narrative generation failed: {e}")

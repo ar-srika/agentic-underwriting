@@ -26,10 +26,6 @@ def _generate_pricing_rationale(
         return pricing
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.GOOGLE_API_KEY)
-        model = genai.GenerativeModel(settings.GEMINI_MODEL)
-
         modifiers_text = "\n".join(
             f"- {m.name}: {m.factor} ({m.reason})" for m in pricing.modifiers
         )
@@ -48,8 +44,9 @@ Key Modifiers:
 
 Write a professional pricing rationale. Be concise and specific. Under 60 words."""
 
-        response = model.generate_content(prompt)
-        pricing.pricing_notes.append(f"AI Rationale: {response.text.strip()}")
+        result_text = settings.call_gemini(prompt).strip()
+        if result_text:
+            pricing.pricing_notes.append(f"AI Rationale: {result_text}")
 
     except Exception as e:
         logger.warning(f"Pricing rationale generation failed: {e}")

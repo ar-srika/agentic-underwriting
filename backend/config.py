@@ -16,7 +16,7 @@ class Settings:
 
     # --- Google AI ---
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-pro")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
 
     # --- Application ---
     APP_ENV: str = os.getenv("APP_ENV", "development")
@@ -55,6 +55,49 @@ class Settings:
     def is_api_key_configured(cls) -> bool:
         """Check if a valid API key is available."""
         return bool(cls.GOOGLE_API_KEY and cls.GOOGLE_API_KEY != "your_gemini_api_key_here")
+
+    @classmethod
+    def call_gemini(cls, prompt: str, system_instruction: str = "") -> str:
+        """
+        Execute Gemini inference with automatic dynamic model fallback
+        across available Gemini >= 3.5 models.
+        """
+        if not cls.is_api_key_configured():
+            return ""
+
+        import google.generativeai as genai
+        genai.configure(api_key=cls.GOOGLE_API_KEY)
+
+        candidates = [
+            cls.GEMINI_MODEL,
+            "gemini-3.7-flash",
+            "gemini-3.5-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-flash-latest",
+            "gemini-pro-latest"
+        ]
+        unique_candidates = list(dict.fromkeys(candidates))
+
+        last_error = None
+        for model_name in unique_candidates:
+            try:
+                if system_instruction:
+                    model = genai.GenerativeModel(
+                        model_name=model_name,
+                        system_instruction=system_instruction
+                    )
+                else:
+                    model = genai.GenerativeModel(model_name=model_name)
+                response = model.generate_content(prompt)
+                if response and response.text:
+                    return response.text
+            except Exception as e:
+                last_error = e
+                continue
+
+        if last_error:
+            raise last_error
+        return ""
 
 
 settings = Settings()

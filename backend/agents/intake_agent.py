@@ -30,10 +30,6 @@ def _enhance_with_gemini(raw_text: str, parsed: SubmissionData) -> SubmissionDat
         return parsed
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.GOOGLE_API_KEY)
-        model = genai.GenerativeModel(settings.GEMINI_MODEL)
-
         prompt = f"""You are an expert insurance intake analyst. Analyze this broker submission and extract any missing fields.
 
 Current extracted data:
@@ -64,8 +60,7 @@ ADDRESS: <value>
 
 If a field is not in the text, do not include it."""
 
-        response = model.generate_content(prompt)
-        result_text = response.text.strip()
+        result_text = settings.call_gemini(prompt).strip()
 
         # Parse Gemini's response and fill gaps
         for line in result_text.split("\n"):

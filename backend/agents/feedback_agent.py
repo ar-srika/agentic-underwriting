@@ -33,10 +33,6 @@ def _generate_executive_summary(
         return _build_default_summary(data, risk, pricing, compliance, decision)
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.GOOGLE_API_KEY)
-        model = genai.GenerativeModel(settings.GEMINI_MODEL)
-
         prompt = f"""You are a Chief Underwriting Officer. Write a concise executive summary for this underwriting decision.
 
 SUBMISSION:
@@ -66,8 +62,8 @@ DECISION: {decision}
 
 Write a 4-5 sentence executive summary suitable for a board report. Include the decision, key risk factors, pricing rationale, and any required actions. Be professional and decisive."""
 
-        response = model.generate_content(prompt)
-        return response.text.strip()
+        result_text = settings.call_gemini(prompt).strip()
+        return result_text or _build_default_summary(data, risk, pricing, compliance, decision)
 
     except Exception as e:
         logger.warning(f"Executive summary generation failed: {e}")
