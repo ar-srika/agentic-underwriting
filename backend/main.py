@@ -12,6 +12,7 @@ from typing import Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from backend.agents.orchestrator import run_orchestrator
 from backend.config import settings
@@ -24,9 +25,9 @@ logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="UnderwriteAI — Enterprise Multi-Agent Underwriting Platform",
-    version=settings.APP_VERSION,
-    description="AI-powered insurance underwriting with 6 specialized agents.",
+    title="UnderwriteAI Enterprise Intelligence Platform",
+    description="Multi-Agent AI Platform for Small Business Insurance Underwriting",
+    version="1.2.0",
 )
 
 app.add_middleware(
@@ -157,4 +158,40 @@ async def get_notifications():
 async def get_portfolio_stats():
     """Get portfolio-level analytics."""
     return memory.get_portfolio_stats()
+
+
+class UnderwriterOverrideRequest(BaseModel):
+    submission_id: str
+    decision_type: str  # "APPROVED" or "DECLINED"
+    comments: str = ""
+    underwriter_id: str = "Senior Underwriter (UW-ID: #4092)"
+
+
+@app.post("/api/v1/override")
+async def apply_underwriter_override(req: UnderwriterOverrideRequest):
+    """Apply underwriter manual override approval or decline."""
+    resolved = memory.resolve_review(
+        submission_id=req.submission_id,
+        decision_type=req.decision_type,
+        comments=req.comments,
+        underwriter_id=req.underwriter_id,
+    )
+    if not resolved:
+        raise HTTPException(404, "Submission not found in memory bank")
+    return resolved.model_dump()
+
+
+@app.post("/api/clear-cache")
+@app.post("/api/v1/clear-cache")
+async def clear_system_cache():
+    """Clear all stored submissions, session snapshots, notifications, and traces."""
+    memory.clear_all()
+    observability.clear_all()
+    return {
+        "status": "success",
+        "message": "All portfolio records, submissions ledger, notifications, and telemetry traces have been cleared."
+    }
+
+
+
 

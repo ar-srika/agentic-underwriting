@@ -1,10 +1,12 @@
-# 🏢 UnderwriteAI — Enterprise Multi-Agent Underwriting Platform
+# 🏢 UnderwriteAI Enterprise Intelligence Platform
+### *Multi-Agent AI Platform for Small Business Insurance Underwriting*
 
 > **Hackathon Track:** Fortified Enterprise Fleet ($20,000 Category Prize)  
-> **Tech Stack:** Google Gemini 3.5 API · Model Context Protocol (MCP) · Google ADK Patterns · FastAPI · Streamlit · Google Cloud Run · OpenTelemetry · Firestore-Ready State Store  
+> **Tech Stack:** Google Gemini 3.5 API · Model Context Protocol (MCP) · Google ADK Patterns · React 18 · Vite · FastAPI · OpenTelemetry · Firestore-Ready State Store  
 > **Domain:** Commercial P&C Insurance Underwriting Automation (Small Business)  
 > **Live GitHub Repo:** [https://github.com/ar-srika/agentic-underwriting](https://github.com/ar-srika/agentic-underwriting)  
 > **Inspiration:** [McKinsey: The Future of AI in the Insurance Industry](https://www.mckinsey.com/industries/financial-services/our-insights/the-future-of-ai-in-the-insurance-industry)
+
 
 ---
 
@@ -249,40 +251,45 @@ Deductible: $2,500
 
 ---
 
-## 🎨 Enterprise White GUI & Interactive Dashboard Suite
-
-UnderwriteAI features a clean enterprise interface styled after **Guidewire PolicyCenter** and **Salesforce Financial Services Cloud**:
+## 🎨 Modern React Enterprise UI & Interactive Suite
+UnderwriteAI features a high-performance single-page web application built with **React 18 + Vite** and Vanilla CSS design system:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│  UnderwriteAI | PolicyCenter Enterprise v1.2                                                    │
-│  Commercial P&C › Small Business Underwriting › BOP/CPP Fleet                                    │
-│  [🟢 US-Central1 (Iowa)]  [🛡️ Model Armor: Active]  [⚡ Gemini 3.5 Pro]  [🌍 MCP Feeds: Active]    │
+│  [☰] 🏢 UnderwriteAI Enterprise Intelligence Platform                                            │
+│  Multi-Agent AI Platform for Small Business Insurance Underwriting                               │
+│  [🟢 US-Central1 (Iowa)]  [🛡️ Model Armor: Active]  [⚡ Gemini 3.5]  [🔔 Notifications] [👤 Role]  │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                                  │
-│  🚦 LIVE SEQUENTIAL AGENT PIPELINE:                                                              │
-│  [🟢 1/6 Ingestion] ──► [🟢 2/6 Profiling] ──► [🟢 3/6 Rating] ──► [🟢 4/6 Audit] ──► [🟢 5/6 Triage] │
+│  🔄 AGENT PIPELINE STATUS & LIVE EXECUTION FLOW:                                                 │
+│  [📥 Intake Agent] ──► [🔍 Risk Profiling] ──► [💰 Pricing Engine] ──► [⚖️ Compliance] ──► ...   │
 │                                                                                                  │
 │  ==============================================================================================  │
 │  ⚠️ MANUAL REVIEW REQUIRED | Confidence: 96.5% | Priority: Critical | MCP Feeds: 4 Live Feeds     │
 │  ==============================================================================================  │
 │                                                                                                  │
+│  👨‍💼 ACTION REQUIRED: SENIOR UNDERWRITER REVIEW DESK:                                            │
+│  [ Endorsement Notes & Rationale Text Area                                                     ] │
+│  [ ✅ Approve & Bind Policy (Manual Override) ]   [ 🚫 Decline Policy (Underwriter Record)     ] │
+│                                                                                                  │
 │  🌍 REAL-TIME LOCATION INTELLIGENCE & MCP FEEDS:                                                 │
-│  ├── 📍 Open-Meteo Geocoding (Lat: 25.7825, Lon: -80.1303 · Elev: 1.5m · Normalized Address)    │
+│  ├── 📍 Open-Meteo Geocoding (Lat: 25.7906, Lon: -80.1300 · Elevation: 1.5m)                      │
 │  ├── 🌊 FEMA Flood Zone MCP (Zone AE · SFHA: Mandatory Flood Insurance · Flood Risk: 82/100)    │
 │  ├── 🌋 USGS Seismic MCP (Zone 1 Stable Continental · PGA: 0.03g · Seismic Risk: 10/100)        │
-│  └── 🌪️ Open-Meteo Weather MCP (Tier 4 Cat 4 Hurricane Exposure · Peak Gusts: 135 mph · 85/100) │
+│  └── 🌪️ Open-Meteo Weather MCP (Tier 3 Cat 3 Hurricane Exposure · Peak Gusts: 110 mph · 72/100)  │
 │                                                                                                  │
 │  📊 UNDERWRITING DASHBOARD TABS:                                                                 │
-│  ├── 📈 Risk Profile (6-Axis Plotly Radar Chart & Tier Classification)                           │
-│  ├── 💰 Pricing & Actuarial Breakdown (8 Modifiers & $10,000 Policy Cap Bar)                    │
-│  ├── ⚖️ Statutory Compliance Audit (10-Point Regulatory & Fair Lending Scorecard)               │
-│  ├── ⚡ Interactive What-If Sandbox (Salesforce Lightning Styled Risk Mitigation Toggles)       │
-│  └── 🔍 Audit Trail & Telemetry (OpenTelemetry Trace Spans & MCP Sub-Agent Logs)                │
+│  ├── 📈 Risk Profile & Radar (6-Axis Custom SVG Radar Chart & Dimension Scorecards)              │
+│  ├── 💰 Pricing & $10K Cap (9 Actuarial Modifiers Table & Policy Ceiling Bar)                    │
+│  ├── ⚖️ Statutory Compliance (10-Point Regulatory & Fair Lending ECOA/FCRA Scorecard)            │
+│  ├── ⚡ What-If Sandbox (Dynamic Interactive Risk Mitigation Sliders & Recalculation)             │
+│  └── 👨‍💼 Senior Underwriter Desk (Formal Binding Authority & Decision Log)                        │
 │                                                                                                  │
-│  👨‍💼 SENIOR UNDERWRITER BINDING DESK (For Hazard Zones & Manual Reviews):                       │
-│  [ Review Notes & Custom Endorsements Text Area                                                ] │
-│  [ ✅ Approve & Bind Policy (Manual Override) ]   [ 🚫 Decline Submission (Underwriter Record) ] │
+│  📌 LEFT-HAND HAMBURGER MENU (ISOLATED PLATFORM MODULES):                                        │
+│  ├── 📊 Portfolio Analytics & Submissions History Ledger Table                                   │
+│  ├── 🔍 OpenTelemetry Audit Trail & Telemetry Logs (Zero Data Retention)                         │
+│  ├── 📋 Enterprise Agent Registry & RBAC Directory (10 Autonomous Units)                         │
+│  └── 🧹 Clear Cache & Reset (Wipes Submissions Ledger, Notifications & System Memory)            │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -308,7 +315,7 @@ python test_pipeline.py
 - **`tests/test_compliance_checker.py`**: Validates all 10 statutory regulatory checks (licensing, fraud, fair lending).
 - **`tests/test_services.py`**: Tests Model Armor PII redaction, prompt injection defense, Memory Bank 90-day snapshots, and Agent Registry RBAC.
 - **`tests/test_orchestrator.py`**: Tests end-to-end multi-agent execution across low-risk, hazard-zone, and high-risk applications.
-- **`tests/test_api.py`**: Tests FastAPI REST endpoints (`/health`, `/api/v1/underwrite`, `/api/v1/registry`, `/api/v1/metrics`).
+- **`tests/test_api.py`**: Tests FastAPI REST endpoints (`/health`, `/api/v1/underwrite`, `/api/v1/registry`, `/api/v1/metrics`, `/api/v1/clear-cache`).
 
 ---
 
@@ -319,6 +326,7 @@ python test_pipeline.py
 git clone https://github.com/ar-srika/agentic-underwriting.git
 cd agentic-underwriting
 pip install -r requirements.txt
+cd frontend-react && npm install && cd ..
 ```
 
 ### 2. Configure Environment (Optional)
@@ -327,17 +335,19 @@ cp .env.example .env
 # Set GOOGLE_API_KEY="your-gemini-api-key" (robust local simulation enabled by default)
 ```
 
-### 3. Launch Enterprise Streamlit Frontend
+### 3. Launch FastAPI REST Backend
 ```bash
-streamlit run frontend/app.py --server.port 8501 --theme.base light
-```
-Open **`http://localhost:8501`** in your browser.
-
-### 4. Launch FastAPI REST Backend
-```bash
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 Interactive Swagger API documentation available at **`http://localhost:8000/docs`**.
+
+### 4. Launch React Enterprise Frontend
+```bash
+cd frontend-react
+npm run dev
+```
+Open **`http://localhost:5173`** in your browser.
+
 
 ---
 

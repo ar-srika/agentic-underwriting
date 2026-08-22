@@ -204,3 +204,10 @@ class MemoryBank:
             "avg_premium": round(sum(premiums) / len(premiums), 2) if premiums else 0,
             "avg_risk_score": round(sum(risk_scores) / len(risk_scores), 1) if risk_scores else 0,
         }
+
+    def clear_all(self) -> None:
+        """Clear all stored submissions, session snapshots, and notifications."""
+        self._submissions.clear()
+        self._snapshots.clear()
+        self._notifications.clear()
+

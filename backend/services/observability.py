@@ -51,6 +51,11 @@ class ObservabilityService:
         """Retrieve all traces."""
         return dict(self._traces)
 
+    def clear_all(self) -> None:
+        """Clear all recorded telemetry traces."""
+        self._traces.clear()
+
+
     @contextmanager
     def trace_agent(
         self,
