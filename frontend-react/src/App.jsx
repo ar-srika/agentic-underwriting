@@ -6,6 +6,7 @@ import PipelineVisualizer from './components/PipelineVisualizer';
 import DecisionBanner from './components/DecisionBanner';
 import UnderwriterReviewActionCard from './components/UnderwriterReviewActionCard';
 import LocationIntelligenceCard from './components/LocationIntelligenceCard';
+import RbacContextBanner from './components/RbacContextBanner';
 import AgentInspector from './components/AgentInspector';
 import NotificationsModal from './components/NotificationsModal';
 import TabRisk from './components/TabRisk';
@@ -214,6 +215,9 @@ export default function App() {
         {/* ── 1. ACTIVE UNDERWRITING WORKSPACE VIEW ── */}
         {currentView === 'workspace' && (
           <>
+            {/* Active RBAC Role Context Banner */}
+            <RbacContextBanner selectedRole={selectedRole} />
+
             {/* Top 2-Column Split: Ingestion Studio (Left) & Pipeline / Banner (Right) */}
             <div className="split-grid">
               {/* Left Column: ACORD Application Input & Dropdown Scenario Selector */}

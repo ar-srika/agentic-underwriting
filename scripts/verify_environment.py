@@ -6,8 +6,6 @@ import sys
 import importlib
 
 REQUIRED_MODULES = [
-    "streamlit",
-    "plotly",
     "fastapi",
     "uvicorn",
     "pydantic",
