@@ -110,9 +110,18 @@ export default function TabRisk({ riskProfile }) {
             </div>
           )}
 
-          <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: '1.5', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <strong>Executive Underwriting Narrative:</strong>
-            <p style={{ marginTop: '4px' }}>{risk_summary}</p>
+          <div style={{ marginTop: '14px', padding: '14px', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>✨ Risk Profiling Narrative (Risk Agent)</span>
+              </div>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, background: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: '10px' }}>
+                Gemini Frontier Intelligence (3.5+)
+              </span>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: '#1e293b', lineHeight: '1.6' }}>
+              {risk_summary}
+            </div>
           </div>
         </div>
       </div>

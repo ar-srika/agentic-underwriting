@@ -16,12 +16,16 @@ from pydantic import BaseModel
 
 from backend.agents.orchestrator import run_orchestrator
 from backend.config import settings
-from backend.models.schemas import SubmissionInput, SubmissionType
+from backend.models.schemas import AgentStatus, SubmissionInput, SubmissionType
 from backend.services.agent_registry import initialize_registry
 from backend.services.memory_bank import MemoryBank
 from backend.services.observability import ObservabilityService
 
-logging.basicConfig(level=settings.LOG_LEVEL)
+logging.basicConfig(
+    level=settings.LOG_LEVEL,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(

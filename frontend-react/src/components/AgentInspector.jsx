@@ -133,13 +133,40 @@ export default function AgentInspector({ agentId, onClose, decision }) {
 
         {decision && (
           <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
-              📊 Telemetry for Active Submission ({decision.submission_id}):
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+              📊 Live Execution Output for Active Submission ({decision.submission_id}):
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: '1.6' }}>
               <div>• Decision Verdict: <b>{decision.decision}</b></div>
               <div>• Confidence Rating: <b>{decision.confidence_score}%</b></div>
               <div>• Model Armor Status: <b>Passed (Zero-Retention Verified)</b></div>
+
+              {agentId === 'intake-agent' && decision.submission_data?.intake_notes && (
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1' }}>
+                  <div style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: '4px' }}>📥 Intake & AI Reasoning Notes:</div>
+                  {decision.submission_data.intake_notes.map((n, idx) => (
+                    <div key={idx} style={{ color: n.includes('✅') ? '#15803d' : n.includes('ℹ') ? '#b45309' : '#475569' }}>
+                      • {n}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {agentId === 'feedback-agent' && decision.executive_summary && (
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1' }}>
+                  <div style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: '4px' }}>📊 Generated Executive Summary:</div>
+                  <div style={{ fontStyle: 'italic', color: '#334155' }}>
+                    "{decision.executive_summary}"
+                  </div>
+                </div>
+              )}
+
+              {agentId === 'risk-agent' && decision.risk_profile?.risk_summary && (
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1' }}>
+                  <div style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: '4px' }}>🔍 Risk Narrative:</div>
+                  <div style={{ color: '#334155' }}>{decision.risk_profile.risk_summary}</div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -147,3 +174,4 @@ export default function AgentInspector({ agentId, onClose, decision }) {
     </div>
   );
 }
+

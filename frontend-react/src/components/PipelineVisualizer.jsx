@@ -33,7 +33,9 @@ export default function PipelineVisualizer({ pipelineStatus, onSelectAgent }) {
                 )}
               </div>
               <div className="pipeline-name">{agent.name}</div>
-              <div className="pipeline-node-status">{status}</div>
+              <div className={`pipeline-node-status ${status}`}>
+                {status === 'running' ? 'in progress' : status}
+              </div>
             </div>
             {index < AGENTS.length - 1 && (
               <div

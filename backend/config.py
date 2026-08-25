@@ -6,8 +6,13 @@ for the Enterprise Underwriting Platform.
 """
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
+# Ensure root .env is loaded reliably regardless of working directory
+_ROOT_DIR = Path(__file__).resolve().parent.parent
+_ENV_PATH = _ROOT_DIR / ".env"
+load_dotenv(dotenv_path=_ENV_PATH, override=True)
 load_dotenv()
 
 
@@ -15,7 +20,7 @@ class Settings:
     """Application-wide settings loaded from environment variables."""
 
     # --- Google AI ---
-    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
 
     # --- Application ---
@@ -52,52 +57,111 @@ class Settings:
     ]
 
     @classmethod
+    def get_api_key(cls) -> str:
+        """Get the active API key from environment or class settings."""
+        key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or cls.GOOGLE_API_KEY
+        return key.strip() if key else ""
+
+    @classmethod
     def is_api_key_configured(cls) -> bool:
         """Check if a valid API key is available."""
-        return bool(cls.GOOGLE_API_KEY and cls.GOOGLE_API_KEY != "your_gemini_api_key_here")
+        key = cls.get_api_key()
+        return bool(key and key != "your_gemini_api_key_here")
 
     @classmethod
     def call_gemini(cls, prompt: str, system_instruction: str = "") -> str:
         """
-        Execute Gemini inference with automatic dynamic model fallback
-        across available Gemini >= 3.5 models.
+        Execute Gemini inference using the official google.genai SDK
+        with automatic dynamic model fallback across Gemini 2.5 / 2.0 / 1.5 models.
         """
         if not cls.is_api_key_configured():
             return ""
 
-        import google.generativeai as genai
-        genai.configure(api_key=cls.GOOGLE_API_KEY)
-
-        candidates = [
-            cls.GEMINI_MODEL,
-            "gemini-3.7-flash",
-            "gemini-3.5-flash",
-            "gemini-3.5-flash-lite",
-            "gemini-flash-latest",
-            "gemini-pro-latest"
-        ]
-        unique_candidates = list(dict.fromkeys(candidates))
-
+        api_key = cls.get_api_key()
         last_error = None
-        for model_name in unique_candidates:
-            try:
-                if system_instruction:
-                    model = genai.GenerativeModel(
-                        model_name=model_name,
-                        system_instruction=system_instruction
-                    )
-                else:
-                    model = genai.GenerativeModel(model_name=model_name)
-                response = model.generate_content(prompt)
-                if response and response.text:
-                    return response.text
-            except Exception as e:
-                last_error = e
-                continue
 
-        if last_error:
-            raise last_error
-        return ""
+        # 1. Primary: Use modern google.genai SDK
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=api_key)
+            candidates = [
+                cls.GEMINI_MODEL,
+                "gemini-3.7-flash",
+                "gemini-3.7-pro",
+                "gemini-3.5-flash",
+                "gemini-3.5-pro",
+                "gemini-3.5-flash-lite",
+            ]
+            unique_candidates = list(dict.fromkeys([c for c in candidates if c]))
+
+            for model_name in unique_candidates:
+                try:
+                    config = types.GenerateContentConfig(
+                        system_instruction=system_instruction
+                    ) if system_instruction else None
+
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=config,
+                    )
+                    if response and response.text:
+                        return response.text
+                except Exception as e:
+                    last_error = e
+                    continue
+
+            if last_error:
+                raise last_error
+            return ""
+
+        except ImportError:
+            pass
+
+        # 2. Secondary fallback: Legacy google.generativeai if google.genai is not installed
+        try:
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                import google.generativeai as legacy_genai
+
+            legacy_genai.configure(api_key=api_key)
+            legacy_candidates = [
+                cls.GEMINI_MODEL,
+                "gemini-3.7-flash",
+                "gemini-3.7-pro",
+                "gemini-3.5-flash",
+                "gemini-3.5-pro",
+                "gemini-3.5-flash-lite",
+            ]
+            unique_legacy = list(dict.fromkeys([c for c in legacy_candidates if c]))
+
+            for model_name in unique_legacy:
+                try:
+                    if system_instruction:
+                        model = legacy_genai.GenerativeModel(
+                            model_name=model_name,
+                            system_instruction=system_instruction,
+                        )
+                    else:
+                        model = legacy_genai.GenerativeModel(model_name=model_name)
+                    response = model.generate_content(prompt)
+                    if response and response.text:
+                        return response.text
+                except Exception as e:
+                    last_error = e
+                    continue
+
+            if last_error:
+                raise last_error
+            return ""
+        except Exception as e:
+            if last_error:
+                raise last_error
+            raise e
+
 
 
 settings = Settings()

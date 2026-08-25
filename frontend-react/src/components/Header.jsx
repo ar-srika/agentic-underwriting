@@ -52,7 +52,7 @@ export default function Header({
 
           <div className="gov-badge">
             <Cpu size={14} />
-            <span>Gemini 3.5 Pro</span>
+            <span>Gemini Frontier Intelligence (3.5+)</span>
           </div>
 
           {/* Notifications Trigger */}
