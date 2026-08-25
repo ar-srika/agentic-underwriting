@@ -74,6 +74,98 @@ class MemoryBank:
         """List all active and archived multi-week session snapshots."""
         return list(self._snapshots.values())
 
+    def seed_demo_snapshot(self) -> SessionSnapshot:
+        """Seed a historical 14-day-old asynchronous session snapshot for demonstration."""
+        from datetime import timedelta
+        from backend.models.schemas import (
+            BusinessInfo,
+            LocationIntelligenceReport,
+            SubmissionData,
+            PropertyDetails,
+            RiskProfile,
+            RiskTier,
+            SubmissionType,
+            GeocodingData,
+            FEMAFloodData,
+        )
+
+        hist_submission = SubmissionData(
+            submission_id="HBV-9421-FL",
+            business_info=BusinessInfo(
+                business_name="Harborview Logistics & Cold Storage LLC",
+                business_type="Commercial Warehousing & Cold Storage",
+                annual_revenue=3400000.0,
+                employee_count=24,
+                years_in_business=6,
+                state="FL",
+                city="Tampa",
+                zip_code="33602",
+                property_address="702 Channelside Drive",
+            ),
+            property_details=PropertyDetails(
+                property_value=2800000.0,
+                building_age_years=8,
+                construction_type="Reinforced Concrete",
+                has_sprinkler_system=True,
+                has_fire_alarm=True,
+                has_security_system=True,
+            ),
+            location_intelligence=LocationIntelligenceReport(
+                submission_id="HBV-9421-FL",
+                geocoding=GeocodingData(
+                    latitude=27.9442,
+                    longitude=-82.4498,
+                    elevation_m=4.2,
+                    city="Tampa",
+                    state="FL",
+                ),
+                fema_flood=FEMAFloodData(
+                    flood_zone="Zone AE",
+                    is_sfha=True,
+                    flood_risk_score=75.0,
+                ),
+                composite_location_score=54.2,
+                hazard_alerts=["FEMA Flood Zone AE detected in Tampa Coastal Sector"],
+            ),
+        )
+
+        hist_decision = UnderwritingDecision(
+            submission_id="HBV-9421-FL",
+            decision=DecisionType.MANUAL_REVIEW,
+            confidence_score=91.0,
+            requires_human_review=True,
+            review_reasons=[
+                "SFHA Flood Zone AE detected (Special Flood Hazard Area - Tampa Bay)",
+                "Commercial cargo valuation exceeds $2.5M threshold",
+            ],
+            decision_rationale="Asynchronous survey hold: Site structural engineering survey pending completion.",
+            executive_summary="Commercial cold storage facility in Tampa Channel District. Automated risk scoring complete (Tier: Moderate); awaiting on-site surveyor report.",
+            created_at=datetime.utcnow() - timedelta(days=14),
+            agents_executed=["Intake Agent", "Open-Meteo Geocoding MCP", "FEMA Flood Zone MCP", "Risk Profiling Agent", "Pricing Agent", "Compliance Agent"],
+            submission_data=hist_submission,
+            risk_profile=RiskProfile(
+                composite_score=58.5,
+                risk_tier=RiskTier.MEDIUM,
+                is_hazard_zone=True,
+                hazard_zones_detected=["FEMA Flood Zone AE", "Hurricane Exposure Tier 3"],
+            ),
+        )
+
+        snapshot = SessionSnapshot(
+            session_id="SNAP-WK2-9421",
+            submission_id="HBV-9421-FL",
+            status="PENDING_REVIEW",
+            created_at=datetime.utcnow() - timedelta(days=14),
+            last_accessed_at=datetime.utcnow() - timedelta(days=14),
+            ttl_days=90,
+            sovereignty_region="us-central1",
+            audit_span_count=6,
+            decision=hist_decision,
+        )
+        self._snapshots[snapshot.session_id] = snapshot
+        self._submissions[hist_decision.submission_id] = hist_decision
+        return snapshot
+
     # ── Submission Storage ────────────────────────────────────────
 
     def store_decision(self, decision: UnderwritingDecision) -> None:

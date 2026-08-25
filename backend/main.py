@@ -38,10 +38,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from backend.services.agent_gateway import AgentGateway
+
 # Initialize services
 registry = initialize_registry()
 memory = MemoryBank()
 observability = ObservabilityService()
+gateway = AgentGateway()
+
+# Pre-seed historical 14-day asynchronous session snapshot for cold-storage demonstration
+memory.seed_demo_snapshot()
 
 
 @app.get("/health")
@@ -55,21 +61,28 @@ async def health_check():
         "version": settings.APP_VERSION,
         "agents_registered": len(registry.list_agents()),
         "gemini_configured": settings.is_api_key_configured(),
+        "gateway": "AgentGateway Active (Zero-Trust)",
     }
+
+
+@app.get("/api/v1/gateway/status")
+async def get_gateway_status():
+    """Retrieve enterprise agent gateway health, routing policies, and security stats."""
+    return gateway.get_gateway_status()
 
 
 @app.post("/api/v1/underwrite")
 async def submit_underwriting_json(submission: SubmissionInput):
     """
-    Submit underwriting request via JSON body.
+    Submit underwriting request via JSON body through the Enterprise Agent Gateway.
     """
     if not submission.raw_text:
         raise HTTPException(400, "raw_text must be provided")
     try:
-        decision = run_orchestrator(submission)
+        decision = gateway.route_underwriting_request(submission)
         return decision.model_dump()
     except Exception as e:
-        logger.error(f"Pipeline error: {e}")
+        logger.error(f"Gateway pipeline error: {e}")
         raise HTTPException(500, f"Processing error: {str(e)}")
 
 
@@ -79,7 +92,7 @@ async def submit_underwriting(
     file: Optional[UploadFile] = File(None),
 ):
     """
-    Submit a new underwriting request via Form data or PDF file upload.
+    Submit a new underwriting request via Form data or PDF file upload through the Gateway.
     """
     if not text and not file:
         raise HTTPException(400, "Either text or file must be provided")
@@ -105,10 +118,10 @@ async def submit_underwriting(
     submission = SubmissionInput(raw_text=raw_text, submission_type=sub_type)
 
     try:
-        decision = run_orchestrator(submission)
+        decision = gateway.route_underwriting_request(submission)
         return decision.model_dump()
     except Exception as e:
-        logger.error(f"Pipeline error: {e}")
+        logger.error(f"Gateway pipeline error: {e}")
         raise HTTPException(500, f"Processing error: {str(e)}")
 
 
@@ -117,6 +130,36 @@ async def submit_underwriting(
 async def get_agent_registry():
     """List all registered agents and their status."""
     return [a.model_dump() for a in registry.list_agents()]
+
+
+# ── Memory Bank & Asynchronous Session Endpoints ──────────────
+
+@app.get("/api/v1/sessions")
+async def list_session_snapshots():
+    """List all active and archived multi-week session snapshots stored in Memory Bank."""
+    return [s.model_dump() for s in memory.list_snapshots()]
+
+
+@app.get("/api/v1/sessions/{session_id}")
+async def get_session_snapshot(session_id: str):
+    """Retrieve a specific long-running session snapshot."""
+    snapshot = memory._snapshots.get(session_id)
+    if not snapshot:
+        raise HTTPException(404, f"Session snapshot '{session_id}' not found")
+    return snapshot.model_dump()
+
+
+@app.post("/api/v1/sessions/{session_id}/hydrate")
+async def hydrate_session(session_id: str):
+    """Re-hydrate a long-running underwriting session from cold storage across weeks of async operations."""
+    snapshot = memory.resume_session(session_id)
+    if not snapshot:
+        raise HTTPException(404, f"Session snapshot '{session_id}' not found in Memory Bank")
+    return {
+        "status": "HYDRATED",
+        "message": f"Session {session_id} successfully re-hydrated from 90-day cold storage.",
+        "snapshot": snapshot.model_dump(),
+    }
 
 
 @app.get("/api/submissions")
@@ -187,6 +230,8 @@ async def clear_system_cache():
     """Clear all stored submissions, session snapshots, notifications, and traces."""
     memory.clear_all()
     observability.clear_all()
+    # Re-seed the demo snapshot so judges always have the async snapshot demo ready
+    memory.seed_demo_snapshot()
     return {
         "status": "success",
         "message": "All portfolio records, submissions ledger, notifications, and telemetry traces have been cleared."

@@ -70,59 +70,79 @@ This score enriches the Risk Profiling Agent beyond static rules, dynamically dr
 
 ## 🏆 Hackathon Compliance & Enterprise Fleet Checklist
 
-UnderwriteAI fully satisfies and implements every architectural requirement for the **Fortified Enterprise Fleet** prize:
+UnderwriteAI fully satisfies and implements every architectural requirement for the **Fortified Enterprise Fleet** category:
 
-| Enterprise Capability | Requirement | UnderwriteAI Implementation Status & Reference |
+| Enterprise Fleet Pillar | Technical Capability | UnderwriteAI Implementation Status & Code Reference |
 |---|---|---|
-| **📋 Agent Registry** | Central cataloging & discovery | ✅ **Implemented** ([`backend/services/agent_registry.py`](backend/services/agent_registry.py)) — Dynamic registration, lifecycle state tracking (`IDLE`, `RUNNING`, `COMPLETED`), versioning (`v1.0.0`), and health metrics across all 6 core agents and 4 MCP sub-agents. |
-| **🌐 Enterprise Runtime** | Serverless scalable hosting | ✅ **Implemented** ([`Dockerfile`](Dockerfile), [`backend/main.py`](backend/main.py)) — Containerized FastAPI REST backend and React Single-Page Application UI deployed to **Google Cloud Run** in sovereign regions. |
-| **🧠 Memory Bank** | Asynchronous multi-week context | ✅ **Implemented** ([`backend/services/memory_bank.py`](backend/services/memory_bank.py)) — 90-day TTL `SessionSnapshot` store supporting asynchronous cold-storage hydration across multi-week commercial survey lifecycles. |
-| **🔑 Identity & RBAC** | Cross-department access control | ✅ **Implemented** ([`backend/services/agent_registry.py`](backend/services/agent_registry.py)) — Explicit role-based permissions (`Underwriter`, `Actuary`, `Claims_Adjuster`, `Compliance_Officer`, `Broker_API_Client`) and interactive UI simulator. |
-| **⚡ API Gateway** | Enterprise service endpoints | ✅ **Implemented** ([`backend/main.py`](backend/main.py)) — Standard REST API endpoints (`/api/v1/underwrite`, `/api/v1/registry`, `/api/v1/metrics`, `/health`) with JSON & Multipart support. |
-| **🛡️ Model Armor** | Security & Data Sovereignty | ✅ **Implemented** ([`backend/services/model_armor.py`](backend/services/model_armor.py)) — Region-locking (`Google Cloud us-central1 (Iowa)`), Zero-Data-Retention (ZDR), PII redaction, prompt injection defense, and $10K statutory cap. |
-| **🔭 Observability** | Distributed telemetry & audit | ✅ **Implemented** ([`backend/services/observability.py`](backend/services/observability.py)) — OpenTelemetry trace spans (`TraceId`, `SpanId`, `DurationMs`, `TokenCount`) for all agent and MCP reasoning steps. |
+| **1. Discovery & Lifecycle** | **Agent Registry** (Catalog, Versioning & Health) | ✅ **100% Implemented** ([`backend/services/agent_registry.py`](backend/services/agent_registry.py)) — Dynamic registration, lifecycle state tracking (`IDLE`, `RUNNING`, `COMPLETED`, `ERROR`), semantic versioning (`v1.0.0`), authorized departments, and rolling health metrics across all 6 core agents and 4 MCP sub-agents. |
+| **2. Core Execution & State** | **Agent Runtime & Memory Bank** (90-Day Cold Storage & Async Hydration) | ✅ **100% Implemented** ([`backend/services/memory_bank.py`](backend/services/memory_bank.py), [`backend/main.py`](backend/main.py)) — 90-day TTL `SessionSnapshot` store supporting asynchronous cold-storage hydration (`POST /api/v1/sessions/{id}/hydrate`) across multi-week commercial survey lifecycles. |
+| **3. Security & Governance** | **Agent Identity & Zero-Trust RBAC** | ✅ **100% Implemented** ([`backend/services/agent_gateway.py`](backend/services/agent_gateway.py), [`backend/services/agent_registry.py`](backend/services/agent_registry.py)) — Department-level Zero-Trust access control (`Underwriter`, `Actuary`, `Claims_Adjuster`, `Compliance_Officer`, `Broker_API_Client`) with live UI role simulation. |
+| **3. Security & Governance** | **Agent Gateway** (Unified Routing & Policy Engine) | ✅ **100% Implemented** ([`backend/services/agent_gateway.py`](backend/services/agent_gateway.py)) — Enterprise ingress gateway managing endpoint dispatch, quota bounds, sovereignty residency enforcement, and route telemetry (`/api/v1/gateway/status`). |
+| **3. Security & Governance** | **Model Armor** (Inline Guardrails & Defenses) | ✅ **100% Implemented** ([`backend/services/model_armor.py`](backend/services/model_armor.py)) — Region-locking (`Google Cloud us-central1 (Iowa)`), Zero-Data-Retention (ZDR), automated SSN/CC PII redaction, prompt injection interception, tool poisoning defense, and $10K statutory cap. |
+| **4. Telemetry & Audit** | **Agent Observability** (OpenTelemetry Traces & Logs) | ✅ **100% Implemented** ([`backend/services/observability.py`](backend/services/observability.py)) — OpenTelemetry-compliant trace spans (`TraceId`, `SpanId`, `DurationMs`, `TokenCount`, `Status`) capturing end-to-end reasoning chains for all core and MCP agent steps. |
 
 ---
 
-## 🏗️ Multi-Agent System Architecture & MCP Flow
+## 🏗️ Multi-Agent System Architecture & Enterprise Fleet Flow
 
 ```mermaid
-flowchart LR
-    %% Input Layer
-    SUBMISSION["📄 <b>Broker Submission</b><br/>ACORD PDF / Raw Text"]
+flowchart TD
+    %% Ingress & Zero-Trust Layer
+    CLIENT["👤 <b>Enterprise Caller / Broker</b><br/>Role: Senior Underwriter / Actuary / Claims / API"]
+    
+    subgraph GATEWAY_LAYER["🛡️ Enterprise Security & Gateway Layer"]
+        GW["⚡ <b>Agent Gateway</b><br/>Unified Ingress Routing & Rate Limiting"]
+        ID_RBAC["🔑 <b>Zero-Trust Identity</b><br/>Department RBAC & Quota Verification"]
+        ARMOR["🛡️ <b>Model Armor Ingress</b><br/>PII Tokenization · Prompt Injection Block · ZDR"]
+        GW --> ID_RBAC --> ARMOR
+    end
 
-    %% Core Multi-Agent Pipeline
-    subgraph PIPELINE["🤖 Autonomous Multi-Agent Pipeline"]
+    %% State & Runtime Layer
+    subgraph STATE_LAYER["🧠 Core Execution & State Layer"]
+        REGISTRY["📋 <b>Agent Registry</b><br/>Dynamic Catalog · Versioning · Health Metrics"]
+        MEM_BANK["💾 <b>Memory Bank (90-Day TTL)</b><br/>Cold-Storage Session Snapshots · Asynchronous Hydration"]
+    end
+
+    %% Core Autonomous Agent Pipeline
+    subgraph FLEET["🤖 Institutional Agent Fleet (Autonomous Pipeline)"]
         direction LR
         INTAKE["📥 <b>1. Intake Agent</b><br/>Parsing & Normalization"]
-        RISK["🔍 <b>2. Risk Agent</b><br/>6-Axis Profiling"]
-        PRICING["💰 <b>3. Pricing Agent</b><br/>Actuarial Rating & Cap"]
+        RISK["🔍 <b>2. Risk Agent</b><br/>6-Axis Profiling & Scoring"]
+        PRICING["💰 <b>3. Pricing Agent</b><br/>Actuarial Rating & $10K Cap"]
         COMPLIANCE["⚖️ <b>4. Compliance Agent</b><br/>10 Statutory Rules"]
-        ORCH["🎯 <b>5. Orchestrator</b><br/>Decision Routing"]
+        ORCH["🎯 <b>5. Orchestrator</b><br/>Decision Matrix Routing"]
         FEEDBACK["📊 <b>6. Feedback Agent</b><br/>Portfolio Analytics"]
 
         INTAKE --> RISK --> PRICING --> COMPLIANCE --> ORCH --> FEEDBACK
     end
 
-    %% External MCP Sub-Agent Fleet
-    subgraph MCP["🌍 Location Intelligence MCP Sub-Agents"]
+    %% Model Context Protocol (MCP) Sub-Agents
+    subgraph MCP_FLEET["🌍 Location Intelligence MCP Sub-Agents"]
         MCP_GEO["📍 <b>Open-Meteo Geocoding</b><br/>Lat / Lon / Elevation"]
         MCP_FEMA["🌊 <b>FEMA Flood Zone</b><br/>NFHL GIS & SFHA Status"]
-        MCP_USGS["🌋 <b>USGS Seismic</b><br/>Fault Distance & PGA %g"]
-        MCP_WX["🌪️ <b>Open-Meteo Weather</b><br/>Hurricane & Wind Tiers"]
+        MCP_USGS["🌋 <b>USGS Seismic</b><br/>Fault Proximity & PGA %g"]
+        MCP_WX["🌪️ <b>Open-Meteo Weather</b><br/>Hurricane & Max Wind Gust"]
     end
 
-    %% Output Decision Layer
-    subgraph DECISION["🎯 Tripartite Verdict"]
-        APP["✅ <b>Auto-Approved</b><br/>Instant Straight-Through"]
-        REV["👨‍💼 <b>Manual Review</b><br/>Senior Underwriter Desk"]
-        DEC["🚫 <b>Auto-Declined</b><br/>Policy / Class Exclusion"]
+    %% Observability & Decision Outputs
+    subgraph TELEMETRY["🔭 OpenTelemetry Distributed Traces"]
+        OTEL["📊 <b>Observability Service</b><br/>TraceId · SpanId · Latency Waterfall · Tokens"]
     end
 
-    %% Data Flow Connections
-    SUBMISSION --> INTAKE
-    INTAKE <-->|Address Query| MCP_GEO
-    RISK <-->|Live Hazard Feeds| MCP_FEMA & MCP_USGS & MCP_WX
+    subgraph TRIAGE["🎯 Tripartite Verdict Desk"]
+        APP["✅ <b>Auto-Approved</b><br/>Instant Straight-Through Binding"]
+        REV["👨‍💼 <b>Manual Review Desk</b><br/>Senior Underwriter Binding & Override"]
+        DEC["🚫 <b>Auto-Declined</b><br/>Class Exclusion / Model Armor Block"]
+    end
+
+    %% Connections
+    CLIENT --> GW
+    ARMOR --> FLEET
+    REGISTRY -.->|Lifecycle & Health| FLEET
+    MEM_BANK <-->|Async Context & Snapshot Restoral| FLEET
+    INTAKE <-->|Normalized Address| MCP_GEO
+    RISK <-->|Live Spatial Hazard Feeds| MCP_FEMA & MCP_USGS & MCP_WX
+    FLEET -.->|Span Telemetry| OTEL
     ORCH --> APP & REV & DEC
 ```
 
@@ -131,16 +151,22 @@ flowchart LR
 ## 🔄 End-to-End Execution Sequence
 
 ```
-[Broker ACORD PDF / Text] 
+[Broker ACORD PDF / Text / API Request] 
        │
        ▼
-[📥 Step 1: Intake Agent] ───────► Queries 📍 Open-Meteo Geocoding MCP
-       │                           Extracts Business Info, Property Values, Lat/Lon Coordinates
+[⚡ Enterprise Agent Gateway] ───► Verifies Caller Role (Zero-Trust RBAC) & Enforces Sovereign Region (us-central1)
+       │
+       ▼
+[🛡️ Model Armor Ingress] ───────► Scans for Prompt Injections, Blocks Malicious Payloads, Redacts SSN / CC PII
+       │
+       ▼
+[📥 Step 1: Intake Agent] ───────► Queries 📍 Open-Meteo Geocoding MCP (Lat/Lon Coordinates & Elevation)
+       │
        ▼
 [🔍 Step 2: Risk Agent] ─────────► Queries 🌊 FEMA Flood MCP, 🌋 USGS Seismic MCP & 🌪️ Weather MCP
-       │                           Blends Multi-Feed Environmental Score with Physical Characteristics
+       │                           Blends Multi-Feed Composite Environmental Score with Physical Risk Axis
        ▼
-[💰 Step 3: Pricing Agent] ──────► Base Premium × 8 Rating Multipliers (Location Surcharges) ──► Enforces $10,000 Policy Cap
+[💰 Step 3: Pricing Agent] ──────► Actuarial Base Premium × 8 Rating Multipliers ──► Enforces Statutory $10,000 Cap
        │
        ▼
 [⚖️ Step 4: Compliance Agent] ───► Executes 10 Statutory Rules (Licensing, Prohibited Class, ENV-001 Hazard Disclosure)
@@ -149,10 +175,13 @@ flowchart LR
 [🎯 Step 5: Orchestrator] ───────► Tripartite Decision Engine:
        ├─────────────────────────► ⚡ AUTO-APPROVED (Risk ≤ 35, Clean Compliance, Standard Location)
        ├─────────────────────────► 👨‍💼 MANUAL REVIEW (FEMA SFHA, Seismic 4, Hurricane Tier or 35 < Risk ≤ 65) ──► Senior Underwriter Binding Desk
-       └─────────────────────────► 🚫 AUTO-DECLINED (Prohibited Category, Prior Fraud, Risk > 65)
+       └─────────────────────────► 🚫 AUTO-DECLINED (Prohibited Category, Prior Fraud, Risk > 65, Model Armor Block)
        │
        ▼
-[📊 Step 6: Feedback Agent] ─────► Synthesizes Executive Portfolio Insights & Risk Exposure Alerts
+[💾 Memory Bank Cold Storage] ───► Persists 90-Day TTL SessionSnapshot for Long-Running Asynchronous Operations
+       │
+       ▼
+[📊 Step 6: Feedback Agent] ─────► Synthesizes Executive Portfolio Insights & OpenTelemetry Telemetry Traces
 ```
 
 ---

@@ -74,8 +74,29 @@ def test_override_and_clear_cache_endpoints(low_risk_submission):
     assert override_res.json()["underwriter_override"] == "APPROVED"
     assert override_res.json()["decision"] == "Underwriter Approved"
 
-    # Test clear cache
+    #    # Clear cache
     clear_res = client.post("/api/v1/clear-cache")
     assert clear_res.status_code == 200
-    assert clear_res.json()["status"] == "success"
+    assert "cleared" in clear_res.json()["message"]
 
+
+def test_gateway_and_session_endpoints():
+    # Gateway status
+    gw_res = client.get("/api/v1/gateway/status")
+    assert gw_res.status_code == 200
+    gw_data = gw_res.json()
+    assert gw_data["gateway_status"] == "ONLINE"
+    assert gw_data["zero_trust_policy"] == "STRICT_ENFORCEMENT"
+
+    # List session snapshots
+    sess_res = client.get("/api/v1/sessions")
+    assert sess_res.status_code == 200
+    snapshots = sess_res.json()
+    assert len(snapshots) >= 1
+    snap_id = snapshots[0]["session_id"]
+
+    # Hydrate snapshot
+    hyd_res = client.post(f"/api/v1/sessions/{snap_id}/hydrate")
+    assert hyd_res.status_code == 200
+    hyd_data = hyd_res.json()
+    assert hyd_data["status"] == "HYDRATED"

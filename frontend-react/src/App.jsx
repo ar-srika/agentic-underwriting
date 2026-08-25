@@ -190,6 +190,13 @@ export default function App() {
     setActiveTab('risk');
   };
 
+  const handleHydrateSession = (hydratedDecision) => {
+    setDecision(hydratedDecision);
+    setCurrentView('workspace');
+    setActiveTab('review');
+    fetchNotificationCount();
+  };
+
   return (
     <div className="app-container">
       <Header
@@ -364,7 +371,12 @@ export default function App() {
             {activeTab === 'compliance' && <TabCompliance compliance={decision?.compliance} />}
             {activeTab === 'sandbox' && <TabSandbox decision={decision} />}
             {activeTab === 'review' && (
-              <TabReviewDesk decision={decision} onOverrideDecision={handleOverrideDecision} selectedRole={selectedRole} />
+              <TabReviewDesk
+                decision={decision}
+                onOverrideDecision={handleOverrideDecision}
+                onHydrateSession={handleHydrateSession}
+                selectedRole={selectedRole}
+              />
             )}
           </>
         )}
