@@ -193,5 +193,40 @@ async def clear_system_cache():
     }
 
 
+# --- Static SPA Frontend Serving (Cloud Run / Full-Stack mode) ---
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+dist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend-react", "dist")
+assets_path = os.path.join(dist_path, "assets")
+
+if os.path.exists(dist_path):
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+
+    @app.get("/")
+    async def serve_root():
+        index_file = os.path.join(dist_path, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        return {"status": "ok", "message": "UnderwriteAI API Backend is running"}
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Don't intercept API routes
+        if full_path.startswith("api/") or full_path.startswith("health"):
+            raise HTTPException(404, "Not Found")
+        file_path = os.path.join(dist_path, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        index_file = os.path.join(dist_path, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        raise HTTPException(404, "Frontend build not found")
+
+
+
+
 
 
