@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Home, BarChart3, Activity, Users, Bell, ShieldCheck, RotateCcw, Building2, Trash2 } from 'lucide-react';
+import { X, Home, BarChart3, Activity, Users, Bell, ShieldCheck, RotateCcw, Building2, Trash2, Database } from 'lucide-react';
 
 export default function SidebarDrawer({
   isOpen,
@@ -21,6 +21,15 @@ export default function SidebarDrawer({
       badge: 'Live',
       badgeColor: '#dcfce7',
       badgeText: '#15803d',
+    },
+    {
+      id: 'memory',
+      title: 'Enterprise Memory Bank',
+      desc: '90-day cold-storage snapshots & async context restoral',
+      icon: <Database size={18} color="#0f766e" />,
+      badge: '90d State',
+      badgeColor: '#ccfbf1',
+      badgeText: '#0f766e',
     },
     {
       id: 'analytics',

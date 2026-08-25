@@ -17,6 +17,7 @@ import TabReviewDesk from './components/TabReviewDesk';
 import TabPortfolioAnalytics from './components/TabPortfolioAnalytics';
 import TabAudit from './components/TabAudit';
 import TabRegistry from './components/TabRegistry';
+import TabMemoryBank from './components/TabMemoryBank';
 import { PRESETS } from './data/presets';
 import { ShieldCheck, Activity, Sliders, DollarSign, FileText, CheckCircle2, AlertTriangle, Users, BarChart3, ArrowLeft, Home } from 'lucide-react';
 
@@ -379,6 +380,35 @@ export default function App() {
               />
             )}
           </>
+        )}
+
+        {/* ── ISOLATED VIEW: ENTERPRISE MEMORY BANK (ACCESSED VIA HAMBURGER MENU) ── */}
+        {currentView === 'memory' && (
+          <div>
+            <div className="isolated-view-header">
+              <div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', fontFamily: 'Outfit, sans-serif' }}>
+                  🧠 Enterprise Memory Bank & Asynchronous Runtime
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                  90-day cold-storage snapshot persistence, cross-week context retrieval, and zero-data-retention restoral
+                </div>
+              </div>
+              <button
+                type="button"
+                className="back-to-workspace-btn"
+                onClick={() => setCurrentView('workspace')}
+              >
+                <ArrowLeft size={16} />
+                <span>Return to Active Workspace</span>
+              </button>
+            </div>
+
+            <TabMemoryBank
+              key={cacheVersion}
+              onHydrateSession={handleHydrateSession}
+            />
+          </div>
         )}
 
         {/* ── 2. ISOLATED VIEW: PORTFOLIO ANALYTICS & HISTORY ── */}
