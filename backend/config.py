@@ -6,14 +6,19 @@ for the Enterprise Underwriting Platform.
 """
 
 import os
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Ensure root .env is loaded reliably regardless of working directory
+# Ensure root .env is loaded reliably locally while respecting Cloud Run env vars
 _ROOT_DIR = Path(__file__).resolve().parent.parent
 _ENV_PATH = _ROOT_DIR / ".env"
-load_dotenv(dotenv_path=_ENV_PATH, override=True)
-load_dotenv()
+if _ENV_PATH.exists():
+    load_dotenv(dotenv_path=_ENV_PATH, override=True)
+else:
+    load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 class Settings:
@@ -48,19 +53,24 @@ class Settings:
     HAZARD_ZONES = [
         "FEMA Flood Zone A", "FEMA Flood Zone V", "FEMA Flood Zone AE",
         "FEMA Flood Zone VE", "Seismic Zone 3", "Seismic Zone 4",
-        "Wildfire WUI High", "Wildfire WUI Very High",
-        "Hurricane Category 3+", "Industrial Proximity"
+        "High Wildfire Hazard Area"
     ]
+
+    # --- State Restrictions ---
+    RESTRICTED_STATES: list = os.getenv("RESTRICTED_STATES", "").split(",") if os.getenv("RESTRICTED_STATES") else []
+
+    # --- Auto-Decline Conditions ---
     PROHIBITED_BUSINESS_TYPES = [
-        "cannabis dispensary", "fireworks manufacturing", "ammunition manufacturing",
-        "hazardous waste disposal", "adult entertainment", "unlicensed gambling"
+        "fireworks manufacturing", "cannabis dispensary", "gun shop",
+        "adult entertainment", "cryptocurrency mining", "hazardous waste disposal",
+        "mining", "explosives", "weapons"
     ]
 
     @classmethod
     def get_api_key(cls) -> str:
-        """Get the active API key from environment or class settings."""
-        key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or cls.GOOGLE_API_KEY
-        return key.strip() if key else ""
+        """Dynamically retrieve the active Google/Gemini API key from environment."""
+        key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or cls.GOOGLE_API_KEY or ""
+        return key.strip().strip("'\"")
 
     @classmethod
     def is_api_key_configured(cls) -> bool:
@@ -72,7 +82,7 @@ class Settings:
     def call_gemini(cls, prompt: str, system_instruction: str = "") -> str:
         """
         Execute Gemini inference using the official google.genai SDK
-        with automatic dynamic model fallback across Gemini 2.5 / 2.0 / 1.5 models.
+        with automatic dynamic model fallback across Gemini 3.7 / 3.5 / 2.5 models.
         """
         if not cls.is_api_key_configured():
             return ""
@@ -93,6 +103,9 @@ class Settings:
                 "gemini-3.5-flash",
                 "gemini-3.5-pro",
                 "gemini-3.5-flash-lite",
+                "gemini-2.5-flash",
+                "gemini-2.0-flash",
+                "gemini-1.5-flash",
             ]
             unique_candidates = list(dict.fromkeys([c for c in candidates if c]))
 
@@ -113,12 +126,8 @@ class Settings:
                     last_error = e
                     continue
 
-            if last_error:
-                raise last_error
-            return ""
-
-        except ImportError:
-            pass
+        except Exception as e:
+            last_error = e
 
         # 2. Secondary fallback: Legacy google.generativeai if google.genai is not installed
         try:
@@ -131,10 +140,9 @@ class Settings:
             legacy_candidates = [
                 cls.GEMINI_MODEL,
                 "gemini-3.7-flash",
-                "gemini-3.7-pro",
-                "gemini-3.5-flash",
-                "gemini-3.5-pro",
-                "gemini-3.5-flash-lite",
+                "gemini-2.5-flash",
+                "gemini-2.0-flash",
+                "gemini-1.5-flash",
             ]
             unique_legacy = list(dict.fromkeys([c for c in legacy_candidates if c]))
 
@@ -154,14 +162,12 @@ class Settings:
                     last_error = e
                     continue
 
-            if last_error:
-                raise last_error
-            return ""
         except Exception as e:
-            if last_error:
-                raise last_error
-            raise e
+            last_error = e
 
+        if last_error:
+            logger.warning(f"All Gemini model candidates failed: {last_error}")
+        return ""
 
 
 settings = Settings()

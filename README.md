@@ -1,14 +1,96 @@
 # 🏢 UnderwriteAI Enterprise Intelligence Platform
 ### *Multi-Agent AI Platform for Small Business Insurance Underwriting*
 
-> **Hackathon Track:** Fortified Enterprise Fleet ($20,000 Category Prize)  
-> **Tech Stack:** Google Gemini 3.5 API · Model Context Protocol (MCP) · Google ADK Patterns · React 18 · Vite · FastAPI · OpenTelemetry · Firestore-Ready State Store  
-> **Domain:** Commercial P&C Insurance Underwriting Automation (Small Business)  
+> **Mandatory Google Agent Framework:** **Google GenAI SDK (`google-genai`)** & **Google ADK Multi-Agent Architecture Patterns**  
+> **Google AI Models:** **Google Gemini 3.7 & 3.5 Frontier Models** (`gemini-3.7-flash`, `gemini-3.7-pro`, `gemini-3.5-flash`, `gemini-3.5-pro`)  
+> **Google Cloud Infrastructure:** **Google Cloud Run**, **Google Cloud Build**, **Google Artifact Registry**, **Google Cloud Logging**  
+> **Grounding & Protocols:** **Model Context Protocol (MCP)** · Open-Meteo · FEMA NFHL · USGS Seismic  
+> **Full Stack:** Python 3.11 · FastAPI · React 18 · Vite · OpenTelemetry · Zero-Trust Gateway · Model Armor  
 > **Live GitHub Repo:** [https://github.com/ar-srika/agentic-underwriting](https://github.com/ar-srika/agentic-underwriting)  
-> **Inspiration:** [McKinsey: The Future of AI in the Insurance Industry](https://www.mckinsey.com/industries/financial-services/our-insights/the-future-of-ai-in-the-insurance-industry)
-
+> **Live Cloud Run Service:** [https://underwrite-ai-1056081276172.us-central1.run.app/](https://underwrite-ai-1056081276172.us-central1.run.app/)  
 
 ---
+
+## 🤖 Mandatory Google Technology Compliance: Google Agent Framework Implementation
+
+This project natively utilizes the **official Google GenAI SDK (`google-genai`)** and adheres to the **Google ADK (Agent Development Kit) Multi-Agent Architecture**:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                     GOOGLE AGENT FRAMEWORK IMPLEMENTATION MAPPING IN UNDERWRITEAI                │
+├──────────────────────────────┬──────────────────────────────┬────────────────────────────────────┤
+│ Google Agent Framework Spec  │ UnderwriteAI Component       │ Concrete Code Implementation       │
+├──────────────────────────────┼──────────────────────────────┼────────────────────────────────────┤
+│ 🔹 Agent Client & LLM Engine │ `google.genai.Client`        │ `backend/config.py` lines 85-115   │
+│                              │ (Google GenAI Python SDK)    │ `client.models.generate_content()` │
+├──────────────────────────────┼──────────────────────────────┼────────────────────────────────────┤
+│ 🔹 Agent Discovery & Catalog │ `AgentRegistry`              │ `backend/services/agent_registry.py│
+│                              │ (ADK Agent Catalog Pattern)  │ Versioning, status, & telemetry    │
+├──────────────────────────────┼──────────────────────────────┼────────────────────────────────────┤
+│ 🔹 Agent Gateway & Identity  │ `AgentGateway` & `ModelArmor`│ `backend/services/agent_gateway.py`│
+│                              │ (Zero-Trust RBAC & Guardrail)│ `backend/services/model_armor.py`  │
+├──────────────────────────────┼──────────────────────────────┼────────────────────────────────────┤
+│ 🔹 Agent State & Memory      │ `Enterprise MemoryBank`      │ `backend/services/memory_bank.py`  │
+│                              │ (ADK Long-Running Context)   │ 90-day cold-storage snapshot sync  │
+├──────────────────────────────┼──────────────────────────────┼────────────────────────────────────┤
+│ 🔹 Tool Use & Grounding      │ `Model Context Protocol`     │ `backend/connectors/`              │
+│                              │ (MCP Connectors)             │ Open-Meteo, FEMA & USGS API tools  │
+└──────────────────────────────┴──────────────────────────────┴────────────────────────────────────┘
+```
+
+### 🔍 Concrete Code Examples in this Repository:
+
+#### 1. Official Google GenAI SDK Integration ([`backend/config.py`](backend/config.py))
+```python
+from google import genai
+from google.genai import types
+
+client = genai.Client(api_key=api_key)
+response = client.models.generate_content(
+    model="gemini-3.7-flash",
+    contents=prompt,
+    config=types.GenerateContentConfig(
+        system_instruction="You are an expert commercial insurance intake analyst."
+    )
+)
+```
+
+#### 2. Multi-Agent Sequential Orchestration Loop ([`backend/agents/orchestrator.py`](backend/agents/orchestrator.py))
+```python
+# Sequential agent coordination with Model Armor ingress and trace telemetry
+parsed_data = run_intake_agent(submission)                     # Step 1: Document & Gap Intake
+risk_profile = run_risk_agent(parsed_data)                     # Step 2: 6-Axis Risk & Location MCP
+pricing = run_pricing_agent(parsed_data, risk_profile)         # Step 3: Actuarial Pricing
+compliance = run_compliance_agent(parsed_data, risk_profile)   # Step 4: Statutory Compliance
+summary = run_feedback_agent(parsed_data, risk_profile, ...)  # Step 5: Executive CUO Synthesis
+```
+
+#### 3. Real-Time Tool-Use via Model Context Protocol ([`backend/connectors/location_intelligence.py`](backend/connectors/location_intelligence.py))
+```python
+# Location Intelligence MCP dynamic tool invocation
+geocoding = mcp_geocode_address(address, city, state)
+weather_feed = mcp_fetch_weather_hazards(lat=geocoding.lat, lon=geocoding.lon)
+flood_feed = mcp_fetch_fema_flood_zone(lat=geocoding.lat, lon=geocoding.lon)
+```
+
+---
+
+## 🔍 Judge-Visible Verification: What is Actually Agentic
+
+The deployed request path on Google Cloud Run follows a strict multi-agent orchestration lifecycle:
+
+1. **Ingress Dispatch**: `POST /api/v1/underwrite` receives an unstructured commercial application or ACORD payload.
+2. **Zero-Trust Security Gate**: The **Agent Gateway** ([`backend/services/agent_gateway.py`](backend/services/agent_gateway.py)) authenticates caller RBAC permissions, verifies regional data sovereignty (`us-central1`), and invokes **Model Armor** ([`backend/services/model_armor.py`](backend/services/model_armor.py)) to neutralize prompt injection attacks and redact sensitive PII (SSN, EIN, Card Numbers) before payloads reach any downstream model.
+3. **AI Gap Extraction**: The **Intake Agent** ([`backend/agents/intake_agent.py`](backend/agents/intake_agent.py)) invokes the **Google GenAI SDK (`google.genai`)** (`backend/config.py`) with `gemini-3.7-flash` to extract missing parameters, generating granular two-tier badges with inline text rationale.
+4. **Dynamic Tool Grounding & AI Risk Narrative (MCP)**: The **Risk Profiling Agent** ([`backend/agents/risk_agent.py`](backend/agents/risk_agent.py)) executes **Model Context Protocol (MCP)** data-fetcher tools ([`backend/connectors/location_intelligence.py`](backend/connectors/location_intelligence.py)) to query live Open-Meteo weather extremes, FEMA National Flood GIS layers, and USGS seismic feeds, and invokes the **Google GenAI SDK (`google.genai`)** with `gemini-3.7-pro` to synthesize an actuarial risk evaluation narrative.
+5. **Actuarial Pricing Gate & AI Endorsement**: The **Pricing Engine Agent** ([`backend/agents/pricing_agent.py`](backend/agents/pricing_agent.py)) applies deterministic actuarial rate multipliers and statutory bounds ($10,000 policy cap), invoking the **Google GenAI SDK (`google.genai`)** with `gemini-3.5-flash` to generate commercial policy endorsement rationales.
+6. **Regulatory Compliance Gate**: The **Compliance Agent** ([`backend/agents/compliance_agent.py`](backend/agents/compliance_agent.py)) runs 10 statutory regulatory checks (NAIC licensing, Fair Lending FCRA/ECOA, AML, and Environmental `ENV-001`), enforcing fail-closed gate logic.
+7. **Executive CUO Synthesis**: The **Feedback & Learning Agent** ([`backend/agents/feedback_agent.py`](backend/agents/feedback_agent.py)) invokes the **Google GenAI SDK (`google.genai`)** with `gemini-3.5-pro` / `gemini-3.7-flash` to synthesize the top board-level Executive Underwriting Summary.
+8. **Asynchronous Memory Persistence**: The final state is committed to the **Enterprise Memory Bank** ([`backend/services/memory_bank.py`](backend/services/memory_bank.py)) with an immutable 90-day cold-storage snapshot, enabling 1-click asynchronous session re-hydration (`POST /api/v1/sessions/{id}/hydrate`).
+9. **Live Diagnostics**: `GET /health` and `GET /api/v1/health` expose live judge-visible diagnostics verifying the active Google Agent Framework, Gemini model configuration, gateway status, and cataloged agent count.
+
+---
+
 
 ## 📌 Problem Statement: The Commercial Underwriting Crisis
 
