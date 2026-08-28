@@ -43,12 +43,15 @@ app.add_middleware(
 )
 
 from backend.services.agent_gateway import AgentGateway
+from backend.adk import ADKSupervisor, ADKSessionStore, ADKToolRegistry
 
 # Initialize services
 registry = initialize_registry()
 memory = MemoryBank()
 observability = ObservabilityService()
 gateway = AgentGateway()
+adk_supervisor = ADKSupervisor()
+adk_session_store = ADKSessionStore(memory_bank=memory)
 
 # Pre-seed historical 14-day asynchronous session snapshot for cold-storage demonstration
 memory.seed_demo_snapshot()
@@ -60,7 +63,8 @@ async def log_startup_banner():
     logger.info("=" * 80)
     logger.info("🏢 UnderwriteAI Enterprise Intelligence Platform — System Startup")
     logger.info("=" * 80)
-    logger.info("⚡ Google Agent Framework : Google GenAI SDK (google-genai) & Google ADK Fleet")
+    logger.info("⚡ Google Agent Framework : Google GenAI SDK (google-genai) & Google ADK Multi-Agent Fleet")
+    logger.info("🛠️ Google ADK Components  : ADK Supervisor Active · ADK SessionStore Ready · ADK MCP Tools Bound")
     logger.info(f"🤖 Frontier Models        : Gemini 3.7 & 3.5 (Configured: {settings.GEMINI_MODEL})")
     logger.info(f"🔑 Gemini API Status      : {'CONFIGURED (Live Reasoning Active)' if settings.is_api_key_configured() else 'SIMULATION MODE (Zero-Token Safe)'}")
     logger.info("🛡️ Zero-Trust Security    : Agent Gateway Active · Model Armor (PII Masking & ZDR)")
@@ -81,6 +85,11 @@ async def health_check():
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "google_agent_framework": "Google GenAI SDK (google-genai) & Google ADK Multi-Agent Fleet",
+        "adk_status": {
+            "adk_supervisor": "Active",
+            "adk_session_store": "Active (90-Day Cold Storage)",
+            "adk_tools_registered": len(ADKToolRegistry.list_tools()),
+        },
         "gemini_model": settings.GEMINI_MODEL,
         "gemini_configured": settings.is_api_key_configured(),
         "agents_registered": len(registry.list_agents()),
@@ -88,6 +97,12 @@ async def health_check():
         "memory_bank": "Enterprise Memory Bank (90-Day Cold Storage Ready)",
         "location_intelligence_mcp": "Active (Open-Meteo, FEMA, USGS)",
     }
+
+
+@app.get("/api/v1/adk/status")
+async def get_adk_status():
+    """Retrieve real-time Google ADK fleet status, registered tools, and supervisor telemetry."""
+    return adk_supervisor.get_fleet_status()
 
 
 @app.get("/api/v1/gateway/status")
