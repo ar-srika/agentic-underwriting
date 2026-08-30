@@ -184,6 +184,14 @@ UnderwriteAI fully satisfies and implements every architectural requirement for 
 
 ## 🏗️ Multi-Agent System Architecture & Enterprise Fleet Flow
 
+<p align="center">
+  <img src="docs/assets/architecture.png" alt="UnderwriteAI Multi-Agent Architecture Diagram" width="100%" />
+</p>
+
+*Figure 1: Full-stack institutional architecture showcasing the dual Google Agent Framework (Google GenAI SDK + Google ADK Fleet Layer), Zero-Trust Security Layer, State & MCP Tool Grounding Layer, and AI Foundation Layer.*
+
+### 🔄 Fleet Execution Flowchart
+
 ```mermaid
 flowchart TD
     %% Ingress & Zero-Trust Layer
